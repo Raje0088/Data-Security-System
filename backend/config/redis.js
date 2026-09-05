@@ -10,13 +10,13 @@ const client = createClient({
     password: process.env.REDIS_PASSWORD,
     socket: {
         host: process.env.REDIS_HOST,
-        port: process.env.REDIS_PORT,
+        port: Number(process.env.REDIS_PORT),
         reconnectStrategy: (retries) => Math.min(retries * 100, 3000),
-    } 
+    }
 });
 
-client.on("connect", () => console.log("✅ Redis connected successfully"));
-client.on("error", (err) => console.error("❌ Redis Client Error:", err));
+client.on("connect", () => console.log("🔌 Redis socket connected"));
+client.on("error", (err) => console.error("❌ Redis Client Error:", err.message));
 client.on("end", () => console.log("⚠️ Redis connection closed"));
 
 async function connectRedis() {
@@ -24,8 +24,9 @@ async function connectRedis() {
         if (!client.isOpen) { // <- critical: check socket open
             await client.connect();
         }
+        console.log("✅ Redis ready for operations");
     } catch (err) {
-        console.error("🚨 Redis connection failed:", err);
+        console.error("🚨 Redis connection failed:", err.message);
     }
 }
 

@@ -91,8 +91,8 @@ const userLogin = async (req, res) => {
 
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: false,       // ❗ false for localhost
-            sameSite: "lax",     // ❗ allow frontend → backend cookies
+            secure: true,       // ❗ false for localhost
+            sameSite: "none",     // ❗ allow frontend → backend cookies
             path: "/",           // ❗ important
             maxAge: 30 * 24 * 60 * 60 * 1000,
         })
@@ -143,8 +143,8 @@ const userLogout = async (req, res) => {
         }
         res.clearCookie("refreshToken", {
             httpOnly: true,
-            secure: false,
-            sameSite: "lax",
+            secure: true,
+            sameSite: "none",
             path: "/"
         });
 
@@ -176,8 +176,8 @@ const refresh = async (req, res) => {
 
         res.cookie("refreshToken", newRefreshToken, {
             httpOnly: true,
-            secure: false,       // ❗ false for localhost
-            sameSite: "lax",     // ❗ allow frontend → backend cookies
+            secure: true,       // ❗ false for localhost
+            sameSite: "none",     // ❗ allow frontend → backend cookies
             path: "/",           // ❗ important
             maxAge: 7 * 24 * 60 * 60 * 1000
         })

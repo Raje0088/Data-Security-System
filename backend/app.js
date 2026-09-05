@@ -47,7 +47,7 @@ app.use(morgan("dev"));
 
 // app.set("trust proxy", 1);
 app.use(cors({
-  origin: ["http://localhost:5173", "http://192.168.1.100:5173",process.env.FRONTEND_URL],
+  origin: ["http://localhost:5173", "http://192.168.1.100:5173", process.env.FRONTEND_URL],
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -66,10 +66,7 @@ const server = http.createServer(app);
 
 // Serve React build
 // ✅ Serve frontend build (React dist)
-//app.use(express.static(paths.dist));
-app.use((req, res) => {
-    res.sendFile(path.join(paths.dist, "index.html"));
-});
+// app.use(express.static(paths.dist));
 
 // ✅ Serve external folders
 app.use("/uploadExcel", express.static(paths.uploadExcel));
@@ -95,6 +92,11 @@ app.use("/payment", paymentHistoryRoutes)
 app.use("/report", reportRoutes)
 app.use("/msg", messageRoutes)
 // app.use(express.static('uploadExcel'))  
+
+// Keep the SPA fallback after all API routes so API requests do not receive index.html.
+app.use((req, res) => {
+  res.sendFile(path.join(paths.dist, "index.html"));
+});
 
 connectDB();
 async function redisFun() {

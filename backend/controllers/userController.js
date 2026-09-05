@@ -18,8 +18,9 @@ const createUser = async (req, res) => {
             edit_P,
             view_P,
             uploadFile_P,
-            download_P, userIdText, passwordText } = req.body;
-
+            permissionData,
+            download_P, userIdText, passwordText, } = req.body;
+console.log("permsissionData",permissionData)
         const emailValidation = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailValidation.test(email)) return res.status(400).json({ message: "Invalid Email, email must contain @" })
 
@@ -64,7 +65,8 @@ const createUser = async (req, res) => {
                 download_P,
                 password: hashPassword,
                 roleType: roleType,
-                userID: userIdText
+                userID: userIdText,
+                "master_data_db.productPermissions":permissionData,
             }
         );
         console.log("User Created Successfully", result);
@@ -88,7 +90,8 @@ const updateUser = async (req, res) => {
             edit_P,
             view_P,
             uploadFile_P,
-            download_P, userIdText, passwordText } = req.body;
+            permissionData,
+            download_P, userIdText, passwordText, } = req.body;
 
         const emailValidation = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailValidation.test(email)) return res.status(400).json({ message: "Invalid Email, email must contain @" })
@@ -127,6 +130,7 @@ const updateUser = async (req, res) => {
                     password: hashPassword,
                     userID: userIdText,
                     roleType: roleType,
+                    "master_data_db.productPermissions":permissionData,
                 }
             },
             { new: true } // return updated document

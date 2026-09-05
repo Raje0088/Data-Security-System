@@ -17,20 +17,31 @@ const TodaysDate = () => {
   return `${yyyy}-${mm}-${dd}`
 }
 
+
+// USER SELF ASSIGN TASK ADDING TO USER PROGRESS SUMMARY MODEL 
 const getSelfAssignTask = async () => {
   try {
     const today = new Date().toISOString().split("T")[0];
-    const result = await scheduleOptimaModel.find({ date_todo_db: today })
+    let result = await scheduleOptimaModel.find({ date_todo_db: today })
+
+    // nothing to do
+    if (!result || result.length === 0) {
+      console.log("ℹ️ No ScheduleOptima goals found today");
+      return;
+    }
 
     const bulkOps = []
     for (const doc of result) {
 
       const goals = doc.goals_db instanceof Map ? Object.fromEntries(doc.goals_db) : doc.goals_db;
       const userId = doc.userId_db
-
       for (const [productName, rawProductObj] of Object.entries(goals)) {
         const productObj = JSON.parse(JSON.stringify(rawProductObj));
-        // console.log("----->", productName, productObj);
+        console.log("SelfAssign input product =", productName,);
+        if (!productName || productName === "undefined") {
+          console.warn("❌ Skipping goal update — invalid product:", productName);
+          continue;  // or return
+        }
 
 
         const filter = {
@@ -62,7 +73,7 @@ const getSelfAssignTask = async () => {
 
     }
     if (bulkOps.length > 0) {
-      await userProgressSummaryModel.bulkWrite(bulkOps);
+      await userProgressSummaryModel.bulkWrite(bulkOps, { w: "majority" });
     }
 
     console.log("✅ Self-assign goals updated successfully");
@@ -70,14 +81,15 @@ const getSelfAssignTask = async () => {
     console.log('internal error', err)
   }
 }
-cron.schedule("0 10 * * *", getSelfAssignTask)
+ 
 
+// TAKING USER_ASSIGN_TASK_FORM PRODUCT WISE AND SAVING IN USER PROGRESS SUMMARY
 const getAdminAssignTask = async () => {
   try {
     const result = await userFormModel.aggregate([
       { $sort: { createdAt: -1 } },
       {
-        $group: {
+        $group: { 
           _id: "$assignToId_db",
           lastRecord: { $first: "$$ROOT" }
         }
@@ -87,10 +99,13 @@ const getAdminAssignTask = async () => {
       }
     ])
 
+
+
+
     const taskField = {
       "New Calls": "new_calls_db",
       "New Data": "new_data_db",
-      "Leads": "lead_db",
+      "Leads": "leads_db",
       "Demo": "demo_db",
       "Installation": "installation_db",
       "Training": "training_db",
@@ -115,16 +130,20 @@ const getAdminAssignTask = async () => {
             product_db: product.productTitle,
           }
 
-          const update = {
-            $set: {
-              [`${mappedField}.adminAssign`]: product.num,
-            }
-          }
-
           try {
-            await userProgressSummaryModel.updateOne(filter, update, {
+            await userProgressSummaryModel.updateOne(filter, {
+              $set: {
+                [`${mappedField}.adminAssign`]: product.num
+              },
+
+              // ⚠️ ONLY APPLIED ON FIRST INSERT
+              $setOnInsert: {
+                [`${mappedField}.selfAssign`]: product.num
+              }
+            }, {
               upsert: true,
               setDefaultsOnInsert: true,
+              w: "majority"
             });
           } catch (err) {
             console.error(
@@ -134,9 +153,6 @@ const getAdminAssignTask = async () => {
           }
         }
       }
-
-
-
     }
     console.log("✅Get Admin Assign Task Daily user progress created/updated successfully");
   } catch (err) {
@@ -144,73 +160,336 @@ const getAdminAssignTask = async () => {
     // res.status(500).json({ message: "internal error", err })
   }
 }
+// const getAdminAssignTask = async () => {
+//   try {
+//     const result = await userFormModel.aggregate([
+//       { $sort: { createdAt: -1 } },
+//       {
+//         $group: {
+//           _id: "$assignToId_db",
+//           lastRecord: { $first: "$$ROOT" }
+//         }
+//       },
+//       {
+//         $replaceRoot: { newRoot: "$lastRecord" }
+//       }
+//     ])
+
+
+
+
+//     const taskField = {
+//       "New Calls": "new_calls_db",
+//       "New Data": "new_data_db",
+//       "Leads": "leads_db",
+//       "Demo": "demo_db",
+//       "Installation": "installation_db",
+//       "Training": "training_db",
+//       "Target": "target_db",
+//       "Recovery": "recovery_db",
+//       "Support": "support_db",
+//       "Follow Up": "followUp_db",
+//     }
+//     const today = new Date().toISOString().split("T")[0];
+//     for (const record of result) {
+//       const assignTask = record.task_product_matrix_db
+
+//       for (const task of assignTask) {
+//         const mappedField = taskField[task.taskTitle]
+//         if (!mappedField) continue
+
+//         // 🔁 4️⃣ Loop through all products under this task
+//         for (const product of task.products) {
+//           const filter = {
+//             userId_db: record.assignToId_db,
+//             date_db: today,
+//             product_db: product.productTitle,
+//           }
+
+//           const update = {
+//             $set: {
+//               [`${mappedField}.adminAssign`]: product.num,
+//             }
+//           }
+
+//           try {
+//             await userProgressSummaryModel.updateOne(filter, update, {
+//               upsert: true,
+//               setDefaultsOnInsert: true,
+//               w:"majority"
+//             });
+//           } catch (err) {
+//             console.error(
+//               `❌ Failed for user ${record.assignToId_db}, product ${product.productTitle}:`,
+//               err.message
+//             );
+//           }
+//         }
+//       }
+//     }
+//     console.log("✅Get Admin Assign Task Daily user progress created/updated successfully");
+//   } catch (err) {
+//     console.log("internal error", err)
+//     // res.status(500).json({ message: "internal error", err })
+//   }
+// }
 
 cron.schedule("02 10 * * *", getAdminAssignTask)
+cron.schedule("0 10 * * *", getSelfAssignTask)
+
+// ADDING COUNTS IN USERPROGROSSMODEL LIKE DEMO, TARGET, INSTALLATION, FOLLOW UP, ETC
+const userProgressSummary = async (result) => {
+  try {
+    const { userId_db, product_db, date_db } = result;
+    const product = result.product_db?.[0]?.label
+
+    const progressExist = await userProgressSummaryModel.findOne({
+      userId_db: userId_db,
+      product_db: product,
+      date_db: date_db
+    })
+
+    if (!progressExist) {
+      // console.log("creating userprogress model")
+      // console.log("A start");
+      await getSelfAssignTask();
+      // console.log("A end");
+
+      // console.log("B start");
+      await getAdminAssignTask()
+      // console.log("B end");
+    }
+    const totals = await clientHistoryModel.aggregate([
+      {
+        $match: {
+          userId_db: result.userId_db,
+          product_db: { $elemMatch: { value: product } },
+          date_db: result.date_db,
+        }
+      },
+      {
+        $group: {
+          _id: "$client_id",
+          new_data_count: {
+            $max: { $cond: ["$tracking_db.new_data_db.completed", 1, 0] }
+          },
+          new_calls_count: {
+            $max: { $cond: ["$tracking_db.new_calls_db.completed", 1, 0] }
+          },
+          leads_count: {
+            $max: { $cond: ["$tracking_db.leads_db.completed", 1, 0] }
+          },
+          demo_count: {
+            $max: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ["$completion_db.newStage", "Demo"] },
+                    { $eq: ["$completion_db.status", "Done"] }
+                  ]
+                },
+                1,
+                0]
+            }
+          },
+          followUp_count: {
+            $max: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ["$completion_db.newStage", "Follow Up"] },
+                    { $eq: ["$completion_db.status", "Done"] }
+                  ]
+                },
+                1,
+                0]
+            }
+          },
+          training_count: {
+            $max: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ["$completion_db.newStage", "Training"] },
+                    { $eq: ["$completion_db.status", "Done"] }
+                  ]
+                },
+                1,
+                0]
+            }
+          },
+          installation_count: {
+            $max: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ["$completion_db.newStage", "Installation/Hosting/Sell"] },
+                    { $eq: ["$completion_db.status", "Done"] }
+                  ]
+                },
+                1,
+                0]
+            }
+          },
+          recovery_count: {
+            $max: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ["$completion_db.newStage", "Recovery"] },
+                    { $eq: ["$completion_db.status", "Done"] }
+                  ]
+                },
+                1,
+                0]
+            }
+          },
+          support_count: {
+            $max: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ["$completion_db.newStage", "Support"] },
+                    { $eq: ["$completion_db.status", "Done"] }
+                  ]
+                },
+                1,
+                0]
+            }
+          },
+
+        },
+      },
+      // sum across all clients -> DAILY TOTALS   
+      {
+        $group: {
+          _id: null,
+          new_data: { $sum: "$new_data_count" },
+          new_calls: { $sum: "$new_calls_count" },
+          leads: { $sum: "$leads_count" },
+          demo: { $sum: "$demo_count" },
+          followup: { $sum: "$followUp_count" },
+          target: { $sum: "$target_count" },
+          training: { $sum: "$training_count" },
+          installation: { $sum: "$installation_count" },
+          recovery: { $sum: "$recovery_count" },
+          support: { $sum: "$support_count" },
+        }
+      }
+    ])
+
+    const summary = totals[0] || {
+      new_data: 0,
+      new_calls: 0,
+      leads: 0,
+      demo: 0,
+      followup: 0,
+      target: 0,
+      training: 0,
+      installation: 0,
+      recovery: 0,
+      support: 0,
+    };
+
+    const report = await userProgressSummaryModel.findOneAndUpdate(
+      {
+        userId_db: userId_db,
+        date_db: date_db,
+        product_db: product
+      },
+      {
+        $set: {
+          "new_data_db.completed": summary.new_data,
+          "new_calls_db.completed": summary.new_calls,
+          "leads_db.completed": summary.leads,
+          "demo_db.completed": summary.demo,
+          "followUp_db.completed": summary.followup,
+          "target_db.completed": summary.target,
+          "training_db.completed": summary.training,
+          "installation_db.completed": summary.installation,
+          "recovery_db.completed": summary.recovery,
+          "support_db.completed": summary.support,
+        }
+      },
+      { upsert: true, new: true }
+    );
+
+    console.log(
+      // `✅ Progress updated → ${report} of ${userId_db}`
+    );
+
+
+  } catch (err) {
+    console.log("internal error in userProgress function", err)
+  }
+
+}
+
 
 const createUserProgress = async (req, res) => {
-  try {
-    const todaydate = new Date().toLocaleDateString("en-GB");
-    const taskTypes = [
-      "demo_db",
-      "installation_db",
-      "leads_db",
-      "recovery_db",
-      "follow_up_db",
-      "support_db",
-      "training_db",
-      "target_db",
-      "no_of_new_calls_db",
-      "new_data_db",
-    ]
+  // try {
+  //   const todaydate = new Date().toLocaleDateString("en-GB");
+  //   const taskTypes = [
+  //     "demo_db",
+  //     "installation_db",
+  //     "leads_db",
+  //     "recovery_db",
+  //     "follow_up_db",
+  //     "support_db",
+  //     "training_db",
+  //     "target_db",
+  //     "no_of_new_calls_db",
+  //     "new_data_db",
+  //   ]
 
-    for (const taskType of taskTypes) {
-      const completeField = `tracking_db.${taskType}.completed`;
-      const completeDateField = `tracking_db.${taskType}.completedDate`
+  //   for (const taskType of taskTypes) {
+  //     const completeField = `tracking_db.${taskType}.completed`;
+  //     const completeDateField = `tracking_db.${taskType}.completedDate`
 
-      const aggregationResult = await clientHistoryModel.aggregate([
-        {
-          $match: {
-            [completeField]: true,
-            [completeDateField]: todaydate,
-          }
-        },
-        {
-          $group: {
-            _id: "$assignTo",
-            count: { $sum: 1 },
-          }
-        }
-      ])
+  //     const aggregationResult = await clientHistoryModel.aggregate([
+  //       {
+  //         $match: {
+  //           [completeField]: true,
+  //           [completeDateField]: todaydate,
+  //         }
+  //       },
+  //       {
+  //         $group: {
+  //           _id: "$assignTo",
+  //           count: { $sum: 1 },
+  //         }
+  //       }
+  //     ])
 
-      for (const row of aggregationResult) {
-        const userId = row._id;
-        const count = row.count;
+  //     for (const row of aggregationResult) {
+  //       const userId = row._id;
+  //       const count = row.count;
 
-        await userProgressSummaryModel.findOneAndUpdate(
-          {
-            userId_db: userId,
-            date_db: todaydate,
-            taskType_db: taskType,
+  //       await userProgressSummaryModel.findOneAndUpdate(
+  //         {
+  //           userId_db: userId,
+  //           date_db: todaydate,
+  //           taskType_db: taskType,
 
-          },
-          {
-            $set: {
-              totalCompleted_db: count,
-            },
-          },
-          {
-            upsert: true,
-            new: true,
-          }
-        )
-      }
+  //         },
+  //         {
+  //           $set: {
+  //             totalCompleted_db: count,
+  //           },
+  //         },
+  //         {
+  //           upsert: true,
+  //           new: true,
+  //         }
+  //       )
+  //     }
 
-    }
-    res.status(200).json({ message: "User progress summary generated", date: todaydate })
-  } catch (err) {
-    console.log("internal error", err)
-    res.status(500).json({ message: "internal error", err: err.message })
-  }
+  //   }
+  //   res.status(200).json({ message: "User progress summary generated", date: todaydate })
+  // } catch (err) {
+  //   console.log("internal error", err)
+  //   res.status(500).json({ message: "internal error", err: err.message })
+  // }
 }
 
 
@@ -225,6 +504,7 @@ const getAdminAssignTaskUserProgress = async (req, res) => {
     res.status(500).json({ message: "internal error", err: err.message })
   }
 }
+
 // //GET USER PROGRESS ROUTES
 // const getUserDailyReport = async (req, res) => {
 //     try {
@@ -690,4 +970,4 @@ const getAdminAssignTaskUserProgress = async (req, res) => {
 
 
 // module.exports = { createUserProgress, getUserDailyReport, getUserGraphReport }
-module.exports = { createUserProgress, getAdminAssignTaskUserProgress }
+module.exports = { createUserProgress, getAdminAssignTaskUserProgress, userProgressSummary }

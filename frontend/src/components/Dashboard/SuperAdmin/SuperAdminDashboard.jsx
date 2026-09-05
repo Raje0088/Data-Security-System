@@ -16,10 +16,12 @@ import AssignWork from "../../AssignWork";
 import CreateTaskForm from "../../CreateTaskForm";
 import UserConfiguration from "../../UserConfiguration";
 import MasterDatabase from "../../MasterDatabase";
+import ReportDashboard from "../../Reports/ReportDashboard";
+import { RequestModalContext } from "../../../context-api/GlobalModalContext";
 
 const SuperAdminDashboard = () => {
-  const { userLoginId ,userPermissions} = useContext(AuthContext);
-  // const [userLoginId,setUserLoginId] = useState("SA")
+  const { userLoginId} = useContext(AuthContext);
+  const { remainderTotalCount, setRemainderTotalCount, remainder, setRemainder } = useContext(RequestModalContext);
   const navigate = useNavigate();
 
   const fileRef = useRef(null);
@@ -44,8 +46,8 @@ const SuperAdminDashboard = () => {
   const [isAssignTask, setIsAssignTask] = useState(false);
   const [isRemainder, setIsRemainder] = useState(false);
   const [isReport, setIsReport] = useState(false);
-  const [remainder, setRemainder] = useState([]);
-  const [remainderTotalCount, setRemainderTotalCount] = useState(0);
+  // const [remainder, setRemainder] = useState([]);
+  // const [remainderTotalCount, setRemainderTotalCount] = useState(0);
   const [buttonTranverseId, setButtonTranverseId] = useState(null);
   const [selectedClients, setSelectedClients] = useState([]);
   // const [buttonTranverseId, setButtonTranverseId] = useState(null);
@@ -53,8 +55,12 @@ const SuperAdminDashboard = () => {
 
   const fetchRemainder = async () => {
     try {
-      const result = await axios.get(`${base_url}/remainders/remainder`);
-      console.log("result", result.data.result);
+      const result = await axios.get(`${base_url}/remainders/remainder`,
+        {
+          params:{userId:userLoginId.userId,roleType :userLoginId.roleType}
+        }
+      );
+      console.log("remainder", result.data.result);
       setRemainder(result.data.result);
       setRemainderTotalCount(result.data.result.length);
     } catch (err) {
@@ -65,85 +71,12 @@ const SuperAdminDashboard = () => {
   useEffect(() => {
     fetchRemainder();
   }, []);
-
-  // useEffect(() => {
-  //   socket.on("connect", () => {
-  //     console.log("✅ Socket connected:", socket.id);
-
-  //     socket.emit("joinRoom", userLoginId);
-  //     console.log("✅ joinRoom emitted with:", userLoginId);
-  //   });
-
-  //   socket.on("assignTask", (data) => {
-  //     console.log("🔥 Received taskAssigned:", data);
-  //     setTaskList((prev) => ({ ...prev, ...data }));
-  //     alert(data.message);
-  //   });
-
-  //   socket.on("remainder", (data) => {
-  //     console.log("data", data.length);
-  //     setRemainderTotalCount(data.length);
-  //     setRemainder(data);
-  //   });
-
-  //   return () => {
-  //     socket.off("assignTask");
-  //     socket.off("connect");
-  //   };
-  // }, []);
-
-  //fetching members
-
-  // const goToClientPage = () => {
-  //   const userId = "SA";
-  //   navigate("/client-page", { state: { userId } });
-  // };
   const goToSearchPage = () => {
     navigate("/search-client");
   };
-
-  // const handleChange = (e, name) => {
-  //   console.log("heelo", name, e.target.value);
-  //   setFilteredBy((prev) => ({
-  //     ...prev,
-  //     [name]: e.target.value,
-  //   }));
-  // };
-
-  // const assignTaskTo = async () => {
-  //   try {
-  //     const result = await axios.post(
-  //       `${base_url}/task/task-assign`,
-  //       {
-  //         assignBy: userLoginId,
-  //         assignTo: filteredBy.member,
-  //       },
-  //       {
-  //         params: {
-  //           state: filteredBy.state || undefined,
-  //           district: filteredBy.district || undefined,
-  //           businessName: filteredBy.businessName.trim() || undefined,
-  //           mobile: filteredBy.mobile || undefined,
-  //         },
-  //       }
-  //     );
-  //     console.log(
-  //       `task is assigned to ${filteredBy.member} sucessfully`,
-  //       result
-  //     );
-  //   } catch (err) {
-  //     console.log("internal error", err.response?.data?.message);
-  //     if (err.response?.data?.message === "No matching raw data found") {
-  //       alert(err.response?.data?.message);
-  //     }
-  //   }
-  // };
-
-  // const handleViewExcel = async()=>{
-  //   try{
-  //     const result = await axios.post("")
-  //   }
-  // }
+  const goToReportPage = () => {
+    navigate("/report");
+  };
 
   const handleImportFile = async () => {
     if (!selectRawFile) {
@@ -176,7 +109,7 @@ const SuperAdminDashboard = () => {
 
       // ✅ STEP 2: Use full backend URL for EventSource
       const eventSource = new EventSource(
-        `${base_url}/raw-data/stream-insert/${filename}?userId=${userLoginId}&originalName=${encodeURIComponent(selectRawFile?.name)}`
+        `${base_url}/raw-data/stream-insert/${filename}?userId=${userLoginId?.userId}&originalName=${encodeURIComponent(selectRawFile?.name)}`
       );
 
       eventSource.addEventListener("progress", (event) => {
@@ -258,7 +191,7 @@ const SuperAdminDashboard = () => {
           />
         </div>
         <header className={styles.header}>
-          <h3>Dashboard For {userPermissions.userName}</h3>
+          <h3>Dashboard For {userLoginId?.userName}</h3>
         </header>
         <div className={styles["box-div"]}>
           <div className={`${styles.box1} ${toggleMenu ? styles.open : ""}`}>
@@ -310,7 +243,7 @@ const SuperAdminDashboard = () => {
                     : "",
               }}
               onClick={() => {
-                setIsReport((prev) => !prev);
+                goToReportPage();
                 setButtonTranverseId("Report");
               }}
             >
@@ -434,14 +367,11 @@ const SuperAdminDashboard = () => {
                 <UserConfiguration />
               </div>
             )}
+            {/* ===========================Report=============================== */}
             {buttonTranverseId === "Report" && (
               <div className={styles["generate-report-div"]}>
                 <div className={styles.btndiv}>
-                  {/* <button>Hot</button>
-                  <button></button>
-                  <button>Hot</button>
-                  <button>Hot</button> */}
-                  <h2>Work in Progress...</h2>
+                  <ReportDashboard />
                 </div>
               </div>
             )}

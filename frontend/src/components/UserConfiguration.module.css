@@ -20,7 +20,8 @@
 }
 .tablediv {
   flex: 1;
-  overflow: auto;
+  /* overflow: auto; */
+  overflow: visible;
   display: flex;
   align-items: start;
   justify-content: flex-start;
@@ -117,4 +118,143 @@
   padding: 5px;
   background-color: blueviolet;
   color: white;
+}
+
+
+
+
+
+.distnotify {
+  /* position: absolute;
+  top: -10px;
+  right: -20px; */
+  width: auto;
+  height: auto;
+  background-color: blue;
+  border-radius: 10px;
+  padding: 2px;
+  color: white;
+  font-size: 10px;
+}
+
+
+/* Fade-in animation */
+@keyframes popupFade {
+  from {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(5px);
+  }
+}
+
+.regionWrapper {
+  width: 100%;
+  height: auto;
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 2px;
+  /* background-color: red; */
+  border: 1px solid gray;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0px;
+}
+.innerWrapper {
+  width: 100%;
+  height: auto;
+  /* grid-template-columns:10%  90%; */
+  background: white;
+  /* padding:5px; */
+}
+
+.prodCellWrapper {
+  width: 100%;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  text-decoration: underline dotted red;
+  text-decoration-thickness: 2px; 
+  text-underline-offset: 3px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.stateCellWrapper {
+  border-right: 2px solid red;
+  /* width:100%; */
+  /* display: block;  */
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  background: rgb(145, 228, 246);
+  padding-left: 5px;
+  margin-bottom: 2px;
+  /* border-bottom: 1px solid red; */
+}
+.districtCellWrapper {
+  position: relative;
+  min-width: 100%;
+  background-color: yellow;
+  padding-left: 5px;
+    margin-bottom: 2px;
+  /* border-bottom: 1px solid ; */
+}
+
+/* Each state’s cell */
+.districtCell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* Each district name (hover trigger) */
+.districtItem {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+/* Hidden popup by default */
+.distbox {
+  display: none;
+  position: absolute;
+  bottom: 100%; /* show below district */
+  left: 0;
+  transform: translateY(5px);
+  background: #fff;
+  border: 2px solid #003cff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(9, 61, 247, 0.15);
+  padding: 8px;
+  max-width: 300px;
+  z-index: 999;
+  animation: popupFade 0.2s ease;
+  overflow: auto;
+}
+/* Show popup on hover */
+.districtCellWrapper:hover .distbox {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  background-color: rgb(225, 225, 255);
+}
+
+.distboxItem {
+  border: 1px solid black;
+  padding: 2px;
+  background-color: white;
+  font-weight: 600;
+}
+.areadiv {
+  width: 100%;
+  height: auto;
+  /* background-color: red; */
+  display: grid;
+  grid-template-columns: 30% 70%;
 }

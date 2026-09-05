@@ -8,7 +8,7 @@ import { AuthContext } from "../context-api/AuthContext";
 import { base_url } from "../config/config";
 
 const Login = () => {
-  const { setUserLoginId, setUserPermission } = useContext(AuthContext);
+  const { setUserLoginId } = useContext(AuthContext);
   const navigate = useNavigate();
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
@@ -36,16 +36,29 @@ const Login = () => {
           password: password,
         },
         {
+          withCredentials: true,
           headers: {
             "Content-Type": "application/json",
           },
         }
       );
       console.log("login data", result.data);
-      if (result.data.message === "Password Match") {
-        setUserLoginId(result.data.userLoginId);
-        setUserPermission(result.data.permission);
-        switch (result?.data?.permission?.roleType) {
+      const masterData = result.data.masterData
+      if (result.data.accessToken) {
+        const userData = await axios.get(`${base_url}/auth/decode`, {
+          withCredentials:true,
+          headers: {
+            Authorization: `Bearer ${result.data.accessToken}`,
+          },
+        });
+        console.log("userData", userData.data.userData);
+        const finalUser = {
+          ...userData.data.userData,
+          masterData:masterData,
+        }
+        console.log("finalUser",finalUser)
+        setUserLoginId(finalUser);
+        switch (userData?.data?.userData?.roleType) {
           case "Superadmin":
             navigate("/");
             break;

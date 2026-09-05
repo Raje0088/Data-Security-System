@@ -17,10 +17,11 @@ import CreateTaskForm from "../../CreateTaskForm";
 import UserConfiguration from "../../UserConfiguration";
 import ScheduleOptima from "../DashboardComponent/ScheduleOptima";
 import QuickTeritoryFlash from "../../QuickTeritoryFlash";
+import ReportDashboard from "../../Reports/ReportDashboard";
 
 const AdminDashboard = () => {
-  const { userLoginId, userPermissions } = useContext(AuthContext);
-
+  const { userLoginId } = useContext(AuthContext);
+  console.log("adminpage", userLoginId);
   const navigate = useNavigate();
 
   const fileRef = useRef(null);
@@ -54,32 +55,39 @@ const AdminDashboard = () => {
   const [taskList, setTaskList] = useState([]);
   const [checkExtraTask, setCheckExtraTask] = useState(false);
 
+  // useEffect(() => {
+  //   if (!userLoginId) return;
+  //   socket.on("connect", () => {
+  //     // console.log("✅ Socket connected:", socket.id);
+
+  //     socket.emit("joinRoom", {userId:userLoginId?.userId,roleType:userLoginId?.roleType});
+  //     console.log("✅ joinRoom emitted with:", userLoginId?.userId,);
+  //   });
+
+  //   socket.on("adminReminder",(data)=>{
+  //     alert("data", data.length);
+  //     setRemainderTotalCount(data.length);
+  //     setRemainder(data);
+  //   })
+
+  //   socket.on("taskAssigned", (data) => {
+  //     console.log("🔥 Received taskAssigned:", data);
+  //     setTaskList((prev) => ({ ...prev, ...data }));
+  //     alert(data.message);
+  //   });
+
+  //   return () => {
+  //     socket.off("adminReminder")
+  //     socket.off("taskAssigned");
+  //     socket.off("connect");
+  //   };
+  // }, [userLoginId]);
+
   useEffect(() => {
-    const adminId = "A1_SA";
-    socket.on("connect", () => {
-      // console.log("✅ Socket connected:", socket.id);
-
-      socket.emit("joinRoom", userLoginId);
-      // console.log("✅ joinRoom emitted with:", executiveId);
-    });
-
-    socket.on("taskAssigned", (data) => {
-      console.log("🔥 Received taskAssigned:", data);
-      setTaskList((prev) => ({ ...prev, ...data }));
-      alert(data.message);
-    });
-
-    return () => {
-      socket.off("taskAssigned");
-      socket.off("connect");
-    };
-  }, []);
-
-  useEffect(() => {
-    console.log("userid", userLoginId);
+    console.log("userid", userLoginId?.userId);
     const fetchTask = async () => {
       const result = await axios.get(
-        `${base_url}/task/get-clientids-assign-by-to/${userLoginId}`
+        `${base_url}/task/get-clientids-assign-by-to/${userLoginId?.userId}`
       );
       const datas = result.data.result;
       console.log("task data", datas);
@@ -95,24 +103,29 @@ const AdminDashboard = () => {
 
   const fetchRemainder = async () => {
     try {
-      const result = await axios.get(`${base_url}/remainders/remainder`);
-      console.log("result", result.data.result);
+      const result = await axios.get(`${base_url}/remainders/remainder`,
+        {
+          params:{userId:userLoginId.userId,roleType :userLoginId.roleType}
+        }
+      );
+      console.log("remainder", result.data.result);
       setRemainder(result.data.result);
       setRemainderTotalCount(result.data.result.length);
     } catch (err) {
       console.log("internal error", err);
     }
   };
+  
   useEffect(() => {
     fetchRemainder();
-  }, []);
+  }, [userLoginId?.userId]);
 
   // useEffect(() => {
   //   socket.on("connect", () => {
   //     console.log("✅ Socket connected:", socket.id);
 
-  //     socket.emit("joinRoom", userLoginId);
-  //     console.log("✅ joinRoom emitted with:", userLoginId);
+  //     socket.emit("joinRoom", userLoginId?.userId);
+  //     console.log("✅ joinRoom emitted with:", userLoginId?.userId);
   //   });
 
   //   socket.on("assignTask", (data) => {
@@ -142,6 +155,10 @@ const AdminDashboard = () => {
   const goToSearchPage = () => {
     navigate("/search-client");
   };
+  const goToReportPage = () => {
+    navigate("/report");
+  };
+
   const handleCheckExtraTask = () => {
     setShowExtraTask(true); // this will show pop up
   };
@@ -159,7 +176,7 @@ const AdminDashboard = () => {
   //     const result = await axios.post(
   //       `${base_url}/task/task-assign`,
   //       {
-  //         assignBy: userLoginId,
+  //         assignBy: userLoginId?.userId,
   //         assignTo: filteredBy.member,
   //       },
   //       {
@@ -220,9 +237,9 @@ const AdminDashboard = () => {
 
       // ✅ STEP 2: Use full backend URL for EventSource
       const eventSource = new EventSource(
-        `${base_url}/raw-data/stream-insert/${filename}?userId=${userLoginId}&originalName=${encodeURIComponent(
-          selectRawFile?.name
-        )}`
+        `${base_url}/raw-data/stream-insert/${filename}?userId=${
+          userLoginId?.userId
+        }&originalName=${encodeURIComponent(selectRawFile?.name)}`
       );
 
       eventSource.addEventListener("progress", (event) => {
@@ -304,7 +321,7 @@ const AdminDashboard = () => {
           />
         </div>
         <header className={styles.header}>
-          <h3>Dashboard For {userPermissions.userName} </h3>
+          <h3>Dashboard For {userLoginId?.userName} </h3>
         </header>
         <div className={styles["box-div"]}>
           <div className={`${styles.box1} ${toggleMenu ? styles.open : ""}`}>
@@ -374,7 +391,7 @@ const AdminDashboard = () => {
                     : "",
               }}
               onClick={() => {
-                setIsReport((prev) => !prev);
+                goToReportPage();
                 setButtonTranverseId("Report");
               }}
             >
@@ -420,7 +437,7 @@ const AdminDashboard = () => {
             {buttonTranverseId === "Schedule Optima" && (
               <>
                 <ScheduleOptima
-                  userLoginId={userLoginId}
+                  userLoginId={userLoginId?.userId}
                   onCheckExtraTask={handleCheckExtraTask}
                   onShowOpenRequest={checkExtraTask}
                 />
@@ -529,7 +546,6 @@ const AdminDashboard = () => {
               </div>
             )}
 
-
             {/* ===========================UserConfiguration=============================== */}
             {buttonTranverseId === "UserConfiguration" && (
               <div className={styles.remainderdiv}>
@@ -541,11 +557,7 @@ const AdminDashboard = () => {
             {buttonTranverseId === "Report" && (
               <div className={styles["generate-report-div"]}>
                 <div className={styles.btndiv}>
-                  {/* <button>Hot</button>
-                  <button></button>
-                  <button>Hot</button>
-                  <button>Hot</button> */}
-                  <h2>Work in Progress...</h2>
+                  <ReportDashboard />
                 </div>
               </div>
             )}

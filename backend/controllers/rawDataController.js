@@ -1,7 +1,8 @@
 const { rawDataModel } = require("../models/rawDataModel")
 const { clientModel } = require("../models/clientModel")
 const { clientSubscriptionModel } = require("../models/clientSubscriptionModel")
-
+const { applyRBAC, applyRBACwithoutProduct } = require("../utils/RBAC")
+const { getDateAndTime } = require("../utils/getLocalTimeAndDate.js")
 const csv = require("csvtojson");
 const xlsx = require("xlsx");
 const fs = require("fs")
@@ -13,6 +14,10 @@ const stringSimilarity = require("string-similarity");
 const { viewExcelModel } = require("../models/viewExcelModel");
 const paths = require("../utils/assetPath");
 const { UserModel } = require("../models/user");
+
+const currentDateAndTime = getDateAndTime()
+const currentDate = currentDateAndTime.split("T")[0]
+const currentTime = currentDateAndTime.split("T")[1]
 
 const correctSpelling = (input, masterList) => {
     if (!input) return "";
@@ -107,6 +112,8 @@ const rawDataDump = async (req, res) => {
                     followup_db: item.Followup || "",
                     dumpBy_db: `${userId}_${curTime}`,
                     remark_db: item.Remark || "",
+                    date_db: currentDate,
+                    time_db: currentDate,
                 };
 
                 formattedDataArray.push(formattedData);
@@ -138,12 +145,12 @@ const rawDataDump = async (req, res) => {
         // Insert all valid records at once
         if (formattedDataArray.length > 0) {
             await getNextGobalCounterSequenceForRaw("rawSerialNumber", SrNo)
-            const t =await rawDataModel.insertMany(formattedDataArray);
-            console.log("raw total",t.length)
+            const t = await rawDataModel.insertMany(formattedDataArray);
+            console.log("raw total", t.length)
             await viewExcelModel.create({
                 userId_db: userId,
                 excelURL_db: `/uploadExcel/${fileName}`,
-                date_db: new Date().toISOString().split("T")[0], 
+                date_db: new Date().toISOString().split("T")[0],
                 time_db: new Date().toLocaleTimeString(),
                 total_db: count,
                 dumpBy_db: `${userId}_${curTime}`,
@@ -273,7 +280,7 @@ const getrawDataNewFormId = async (req, res) => {
     }
 }
 
-
+// DEACTIVATE RAW
 const deactivateRawData = async (req, res) => {
     try {
         const clientId = req.params.id;
@@ -289,35 +296,17 @@ const deactivateRawData = async (req, res) => {
         console.log("Error during deactivation", err)
     }
 }
+
 const activateRawData = async (req, res) => {
     try {
         const clientId = req.params.id;
-        const clientToActivate = await rawDataModel.findOne({ ClientId_db: clientId, isActive_db: false })
-
-        if (!clientToActivate) {
-            return res.status(404).json({ message: "Client not found or already active" });
-        }
-
-        const activeCount = await rawDataModel.countDocuments({
-            isActive_db: true,
-        })
-        const newSrNo = activeCount + 1;
-
-        // set client active to true
-        const result = await rawDataModel.updateOne(
-            { ClientId_db: clientId },
-            {
-                $set: {
-                    isActive_db: true,
-                    SrNo_db: newSrNo
-                }
-            }
+        const result = await rawDataModel.findOneAndUpdate(
+            { client_id: clientId, isActive_db: false },
+            { $set: { isActive_db: true } },
+            { new: true, }
         )
-        // Now fetch the updated document or update the old one
-
-        console.log("activate client", clientToActivate);
         res.status(200).json({
-            message: `Client ${clientId} activated and SrNo ${newSrNo}`
+            message: `Client ${clientId} activated successfully`
         });
     } catch (err) {
         res.status(500).json({ message: "Error during activation", err: err.message })
@@ -329,17 +318,17 @@ const activateRawData = async (req, res) => {
 const filterRawData = async (req, res) => {
     try {
         const { userId, clientId, clientName, opticalName, address, mobile, email, district, state, country, hot,
-            followUp, demo, installation, product, defaulter, recovery, lost, dateFrom, dateTo, clientType, pincode } = req.body;
+            followUp, demo, installation, product, deactivate, defaulter, recovery, lost, dateFrom, dateTo, clientType, pincode, masterData } = req.body;
         const { page = 1 } = req.body;
-        const limit = 500;
+        const limit = 100;
         const skip = (page - 1) * limit;
         console.log("query raw", req.body)
 
         const filters = {}
-        if (userId !== "SA") {
-            filters["master_data_db.assignTo"] = userId;
-            console.log("userId", userId)
-        }
+        // if (userId !== "SA") {
+        //     filters["master_data_db.assignTo"] = userId;
+        //     console.log("userId", userId)
+        // }
         if (clientId) filters.client_id = clientId
         if (pincode && pincode.length > 0) filters.pincode_db = { $in: pincode }
         if (clientName) filters.client_name_db = { $regex: clientName, $options: "i" }
@@ -371,37 +360,54 @@ const filterRawData = async (req, res) => {
         ]
         if (district) filters.district_db = { $regex: district, $options: "i" }
         if (state) filters.state_db = { $regex: state, $options: 'i' }
-        filters.isActive_db = true;
-        // if (country) filters.country = { $regex: country, $options: 'i' }
-        // if (hot) filters.hot = { $regex: hot, $options: "i" }
-        // if (followUp) filters.followUp = { $regex: followUp, $options: "i" }
-        // if (demo) filters.demo = { $regex: demo, $options: "i" }
-        // if (installation) filters.installation = { $regex: installation, $options: "i" }
-        // if (product) filters.product = { $regex: product, $options: "i" }
-        // if (defaulter) filters.defaulter = { $regex: defaulter, $options: "i" }
-        // if (recovery) filters.recovery = { $regex: recovery, $options: "i" }
-        // if (lost) filters.lost = { $regex: lost, $options: "i" }
-        // if (dateFrom && dateTo) filters.date_db = { $gte: dateFrom, $lte: dateTo }
+        if (country) filters.country = { $regex: country, $options: 'i' }
 
-        let result, totalCount, db;
-        const totalCountUser = await clientSubscriptionModel.countDocuments(filters)
-        const totalCountClient = await clientModel.countDocuments(filters)
+        if (product) filters["product_db.label"] = { $regex: product, $options: "i" }
+        if (hot === true) filters["tracking_db.hot_db.completed"] = true
+        if (followUp === true) filters["tracking_db.follow_up_db.completed"] = true;
+        if (demo === true) filters["tracking_db.demo_db.completed"] = true
+        if (installation === true) filters["tracking_db.installation_db.completed"] = true
+        if (defaulter === true) filters["tracking_db.defaulter_db.completed"] = true
+        if (recovery === true) filters["tracking_db.recovery_db.completed"] = true
+        if (lost === true) filters["tracking_db.lost_db.completed"] = true
+        if (dateFrom && dateTo) filters.date_db = { $gte: dateFrom, $lte: dateTo }
+        if (deactivate === true) { filters.isActive_db = false }
+        else {
+            filters.isActive_db = true;
 
-        if (totalCountUser > 0 && clientId || totalCountUser > 0 && clientName || totalCountUser > 0 && opticalName || totalCountUser > 0 && mobile) {
-            result = await clientSubscriptionModel.find(filters).sort({ client_id: 1 }).skip(skip).limit(limit)
-            totalCount = await clientSubscriptionModel.countDocuments(filters)
-            db = "User Database"
-        } else if (totalCountClient > 0 && clientId || totalCountClient > 0 && clientName || totalCountClient > 0 && opticalName || totalCountClient > 0 && mobile) {
-            result = await clientModel.find(filters).sort({ client_id: 1 }).skip(skip).limit(limit)
-            totalCount = await clientModel.countDocuments(filters)
-            db = "Client Database"
-        } else {
-            result = await rawDataModel.find(filters).sort({ client_id: 1 }).skip(skip).limit(limit)
-            totalCount = await rawDataModel.countDocuments(filters)
-            db = "Raw Database"
         }
 
-        res.status(200).json({ message: "Client details filter result", page: Number(page), limit: limit, totalCount: totalCount, resultCount: result.length, result, db })
+        let result, totalCount, db;
+        result = await rawDataModel.find(filters).sort({ client_id: 1 }).skip(skip).limit(limit)
+        totalCount = await rawDataModel.countDocuments(filters)
+        db = "Raw Database"
+
+        // ===============ADDING VIEW PERMISSION IN RECORDS================================================
+        // console.log("000000000000", filters)
+        let mergedRecords
+        if (masterData.roleType === "Superadmin") {
+            mergedRecords = result.map(doc => ({
+                ...(doc.toObject ? doc.toObject() : doc),
+                isView: true,
+                isDelete: true,
+                isUpdate: true,
+                isEdit: true,
+            }));
+
+        } else {
+            if (product) {
+                const selectProdPerm = masterData.masterData.productPermissions.filter((prod) => prod.productName === product)
+                const allowedPerm = selectProdPerm[0].permission
+                const allowedRegion = selectProdPerm[0].region
+
+                mergedRecords = applyRBAC(result, allowedRegion, allowedPerm, masterData.permission)
+            } else {
+                mergedRecords = applyRBACwithoutProduct(result, masterData.masterData.productPermissions, masterData.permission)
+            }
+
+        }
+
+        res.status(200).json({ message: "Client details filter result", page: Number(page), limit: limit, totalCount: totalCount, resultCount: result.length, result: mergedRecords, db })
     } catch (err) {
         console.log("internal error", err)
         res.status(500).json({ message: "internal error", err: err.message })
@@ -435,7 +441,7 @@ const rawDBExcelUploadData = async (req, res) => {
         const limit = 50
         console.log("dumpid", DumpId)
         const result = await rawDataModel.find({ dumpBy_db: DumpId }).sort({ client_id: 1 })
-        console.log("Data found", result)
+        // console.log("Data found", result)
         res.status(200).json({ message: "Data found", total: result.length, result });
     } catch (err) {
         console.log("internal error", err)
@@ -454,13 +460,14 @@ const getLastGlobalId = async (req, res) => {
     }
 }
 
+
+//FILTER DATA FROM RAW,CLIENT,USER DB ON SEARCH PAGE [DONE] 
 const gilterDataFromAllDB = async (req, res) => {
     try {
         const { userId, clientId, clientName, opticalName, address, mobile, email, district, state, country, hot,
-            followUp, demo, installation, product, defaulter, recovery, lost, dateFrom, dateTo, clientType, pincode,page=1 } = req.body;
+            followUp, demo, installation, amc, deactivate, masterData, product, defaulter, recovery, lost, dateFrom, dateTo, clientType, pincode, page = 1 } = req.body;
         const limit = 100;
         const skip = (page - 1) * limit;
-        console.log("pincode", pincode)
         const filters = {}
 
         // if (userId !== "SA") {
@@ -499,8 +506,23 @@ const gilterDataFromAllDB = async (req, res) => {
         ]
         if (district) filters.district_db = { $regex: district, $options: "i" }
         if (state) filters.state_db = { $regex: state, $options: 'i' }
-        filters.isActive_db = true;
-        console.log("filters",filters)
+        if (product) filters["product_db.label"] = { $regex: product, $options: "i" }
+        if (hot) filters["tracking_db.hot_db.completed"] = true
+        if (followUp) filters["tracking_db.follow_up_db.completed"] = true;
+        if (demo) filters["tracking_db.demo_db.completed"] = true
+        if (amc) filters["tracking_db.amc_db.completed"] = true
+        if (installation) filters["tracking_db.installation_db.completed"] = true
+        if (defaulter) filters["tracking_db.defaulter_db.completed"] = true
+        if (recovery) filters["tracking_db.recovery_db.completed"] = true
+        if (lost) filters["tracking_db.lost_db.completed"] = true
+        if (dateFrom && dateTo) filters.date_db = { $gte: dateFrom, $lte: dateTo }
+        if (deactivate === true) { filters.isActive_db = false }
+        else {
+            filters.isActive_db = true;
+
+        }
+
+        console.log("filters", filters)
         //total counts
         const rawCount = await rawDataModel.countDocuments(filters)
         const clientCount = await clientModel.countDocuments(filters)
@@ -509,7 +531,7 @@ const gilterDataFromAllDB = async (req, res) => {
         const totalCount = userCount + clientCount + rawCount;
 
         let remainingSkip = skip;
-        let remainingLimit = limit; 
+        let remainingLimit = limit;
 
         let r1 = [], r2 = [], r3 = [];
 
@@ -540,13 +562,38 @@ const gilterDataFromAllDB = async (req, res) => {
             }
         }
         const merged = [...r1, ...r2, ...r3];
+
+        // ===============ADDING VIEW PERMISSION IN RECORDS================================================
+        let mergedRecords
+        if (masterData.roleType === "Superadmin") {
+            mergedRecords = merged.map(doc => ({
+                ...(doc.toObject ? doc.toObject() : doc),
+                isView: true,
+                isDelete: true,
+                isUpdate: true,
+                isEdit: true,
+            }));
+
+        } else {
+            if (product) {
+                const selectProdPerm = masterData.masterData.productPermissions.filter((prod) => prod.productName === product)
+                const allowedPerm = selectProdPerm[0].permission
+                const allowedRegion = selectProdPerm[0].region
+
+                mergedRecords = applyRBAC(merged, allowedRegion, allowedPerm, masterData.permission)
+            } else {
+                mergedRecords = applyRBACwithoutProduct(merged, masterData.masterData.productPermissions, masterData.permission)
+            }
+        }
+        // console.log("mergedRecord", mergedRecords)
+
         res.status(200).json({
             message: "Search from all DB with pagination",
             page: Number(page),
             limit,
             totalCount,
-            resultCount: merged.length,
-            result: merged,
+            resultCount: mergedRecords.length,
+            result: mergedRecords,
             counts: {
                 u: userCount,
                 c: clientCount,
@@ -561,18 +608,15 @@ const gilterDataFromAllDB = async (req, res) => {
 }
 
 
+const deleteRawDBData = async (req, res) => {
+    try {
+        const { selectedClients } = req.body;
+        const total = await rawDataModel.deleteMany({ client_id: { $in: selectedClients }, database_status_db: { $ne: "User" } })
+        res.status(200).json({ message: `Deactivated Clients deleted sucessfully ${total.deletedCount}` })
+    } catch (err) {
+        console.log("internal error", err)
+        res.status(500).json({ message: "internal error", err: err.message })
+    }
+}
 
-// const gilterDataFromAllDB= async(req,res)=>{
-//     try{
-//         const r3 = await rawDataModel.find({isActive_db:true}).sort({client_id:1 })
-//         const r2 = await clientModel.find({isActive_db:true}).sort({client_id:1 })
-//         const r1 = await clientSubscriptionModel.find({isActive_db:true}).sort({client_id:1 })
-
-//         res.status(200).json({message:"Search from all DB",r1,totalUserCount:r1.length,r2,totalClientCount:r2.length,r3,totalRawCount:r3.length})
-//     }catch(err){
-//          console.log("internal error",err)
-//         res.status(500).json({message:"internal error",err:err.message})
-//     }
-// }
-
-module.exports = { rawDataDump, rawDBExcelUploadData, rawSampleFile, filterRawData, createNewRawDBRecord, getrawDataDump, getrawDataNewFormId, deactivateRawData, activateRawData, getLastGlobalId, gilterDataFromAllDB }
+module.exports = { rawDataDump, rawDBExcelUploadData, rawSampleFile, filterRawData, createNewRawDBRecord, getrawDataDump, getrawDataNewFormId, deactivateRawData, activateRawData, getLastGlobalId, gilterDataFromAllDB, deleteRawDBData }

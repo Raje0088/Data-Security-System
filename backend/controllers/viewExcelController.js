@@ -33,16 +33,6 @@ const recordTracker = async (req, res) => {
     }
 }
 
-const viewExcelUploadedSheetByUser = async (req, res) => {
-    try {
-        const url = req.params.id
-        const path = path.join(__dirname, "uploadExcel")
-    } catch (err) {
-        console.log("internal error", err)
-        res.status(500).json({ message: "internal error", err: err.message })
-    }
-}
-
 //In SEARCH PAGE GET ALL DUMPY EXCEL SHEET NAME 
 const getExcelRecord = async (req, res) => {
     try {
@@ -108,8 +98,11 @@ const getAllExcelSheetRecord = async (req, res) => {
 const updateAssignExcelToUser = async (req, res) => {
     try {
         const { title, excelId, assignTo, assignBy } = req.query;
-        console.log("excel", title, excelId)
-        const result = await viewExcelModel.updateOne({ dumpBy_db: excelId },
+        console.log("excel============",req.query)
+        const alreadyAssignUser = await viewExcelModel.findOne({assignTo_db:assignTo})
+        if(alreadyAssignUser) return res.status(409).json({message:`${alreadyAssignUser.assignTo_db} has already assigned ${alreadyAssignUser.excel_title_db} Excelsheet`})
+       
+            const result = await viewExcelModel.updateOne({ dumpBy_db: excelId },
             {
                 $set: {
                     assignTo_db: assignTo,

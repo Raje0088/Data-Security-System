@@ -11,6 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "agenda": "^5.0.0",
     "archiver": "^7.0.1",
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
@@ -30,6 +31,8 @@
     "multer": "^2.0.1",
     "node-cron": "^4.1.0",
     "nodemailer": "^7.0.5",
+    "pdfmake": "^0.2.10",
+    "redis": "^5.9.0",
     "request-ip": "^3.3.0",
     "socket.io": "^4.8.1",
     "string-similarity": "^4.0.4",
@@ -49,12 +52,20 @@
       "utils/**/*",
       "ZDUMPING/**/*",
       "dist/**/*",
-      ".env"
+      ".env",
+      "node_modules/@foliojs-fork/linebreak/src/classes.trie",
+      "node_modules/pdfmake/build/vfs_fonts.js",
+      "node_modules/geoip-lite/data/**"
     ]
   },
-    "nodemonConfig": {
-    "watch": ["."],
-    "ignore": ["tempFile/*", "uploadExcel/*"],
+  "nodemonConfig": {
+    "watch": [
+      "."
+    ],
+    "ignore": [
+      "tempFile/*",
+      "uploadExcel/*"
+    ],
     "ext": "js,json"
   }
 }

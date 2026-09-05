@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const path = require("path")
 const { updateLatterPincode,filterPincodeForAssignTask, fetchPlaceRawDB, deleteLatterPincode,updateStateDistrictName, getStateDistrictName,searchPincode, getLatterPincode,sampleExcelFile, getStateDistrictVillageName, createPincode } = require("../controllers/pincodeControler.js")
-
+const {getFilterState} = require("../utils/filterArea.js")
 const { uploadPincodeExcel } = require("../ZDUMPING/pincodeController.js")
 
 router.get("/search-pincode", searchPincode)
@@ -37,6 +37,9 @@ router.post("/dump", upload.single("excelPincode"), (req, res) => {
 router.get("/progress/:filename", uploadPincodeExcel);
 router.get("/sampleFile", sampleExcelFile);
 router.get("/assign-task-pincode", filterPincodeForAssignTask);
+
+//----------REDIS AREA FILTER USING HERE -----------------------
+router.post("/filter-area",getFilterState)
 
 
 module.exports = router;

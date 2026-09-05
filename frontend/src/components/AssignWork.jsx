@@ -39,7 +39,7 @@ const AssignWork = ({ taskList, setTaskList }) => {
     const fetchTask = async () => {
       try {
         const result = await axios.get(
-          `${base_url}/task/get-assign-task/${userLoginId}`,
+          `${base_url}/task/get-assign-task/${userLoginId?.userId}`,
           {
             params: { ...filteredBy },
           }
@@ -54,7 +54,7 @@ const AssignWork = ({ taskList, setTaskList }) => {
     fetchTask();
   }, [filteredBy, refresh]);
 
-  const handleStartTask = (clientIds, assignBy, assignTo) => {
+  const handleStartTask = (clientIds, assignBy, assignTo,taskId) => {
     console.log("clietnda");
     const idsArray = clientIds.map((ids) => ids.id);
     navigate("/client-page", {
@@ -63,6 +63,7 @@ const AssignWork = ({ taskList, setTaskList }) => {
         ids: idsArray,
         assignBy: assignBy,
         assignTo: assignTo,
+        taskId:taskId,
       },
     });
   };
@@ -109,7 +110,7 @@ const AssignWork = ({ taskList, setTaskList }) => {
   const handleExcelView = async (value) => {
     try {
       const result = await axios.get(
-        `${base_url}/users/search-by-user/${userLoginId}`
+        `${base_url}/users/search-by-user/${userLoginId?.userId}`
       );
       const data = result.data.result?.master_data_db;
       console.log("area", data);
@@ -374,7 +375,8 @@ const AssignWork = ({ taskList, setTaskList }) => {
                             handleStartTask(
                               item.task_client_id,
                               item.assignBy_db,
-                              item.assignTo_db
+                              item.assignTo_db,
+                              item._id
                             );
                           }}
                         >
@@ -394,7 +396,6 @@ const AssignWork = ({ taskList, setTaskList }) => {
                           onClick={() => {
                             setSelectTaskIndex(idx);
                             handleOpenModal(true);
-                            console.log("sdf");
                           }}
                           className={styles.icon1}
                         />
@@ -415,7 +416,8 @@ const AssignWork = ({ taskList, setTaskList }) => {
             <div>
               <h4>Assign Excel Sheet</h4>
             </div>
-            {assignDataList?.excelId?.title !== "NA" ? (
+            {assignDataList?.excelId &&
+            assignDataList?.excelId !== "NA" ? (
               <table>
                 <thead>
                   <tr>
@@ -452,59 +454,58 @@ const AssignWork = ({ taskList, setTaskList }) => {
             <div style={{ marginTop: "10px" }}>
               <h4>Assign Area</h4>
             </div>
-            {assignDataList.area?.length > 0 ? (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Sr No</th>
-                    <th>User</th>
-                    <th>Area</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {assignDataList.area?.map((states, idx) => (
-                    <tr>
-                      <td>{idx + 1}</td>
-                      <td>
-                        <h4>
-                          {" "}
-                          {states.stateName} ({states.totalCnt})
-                        </h4>
-                      </td>
-                      <td>
-                        {states.district.map((dist, j) => (
-                          <span style={{ display: "flex" }}>
-                            <strong
-                              style={{
-                                background: [
-                                  "MUMBAI",
-                                  "KOLKATA",
-                                  "CHENNAI",
-                                  "DELHI",
-                                ].includes(dist.districtName)
-                                  ? "yellow"
-                                  : "",
-                              }}
-                            >
-                              {dist.districtName}({dist.totalDistCnt})
-                            </strong>
-                            <span>
-                              {" — "}
-                              {dist.pincodes.length > 0 &&
-                                dist.pincodes.map((pin, k) => (
-                                  <span>
-                                    {pin.code}{" "}
-                                    {k < dist.pincodes.length - 1 && ", "}
-                                  </span>
-                                ))}
-                            </span>
-                          </span>
-                        ))}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {assignDataList.productPermissions?.length > 0 ? (
+             <div className={styles.regionWrapper}>
+                {assignDataList.productPermissions?.map((place, i) => (
+                  <div key={i} className={styles.innerWrapper}>
+                    <span
+                      // style={{ fontSize: "10px", fontWeight: "700" }}
+                      className={styles.prodCellWrapper}
+                    >
+                      {place.productName}
+                    </span>
+                    <div className={styles.areadiv}>
+                      <span style={{textAlign:"center",padding:"4px",borderBottom:"1px solid black"}} className={styles.stateCellWrapper}>State</span>
+                      <span style={{textAlign:"center",padding:"4px",borderBottom:"1px solid black"}} className={styles.districtCellWrapper}>District</span>
+                    </div>
+                    {place.region.map((area, idx) => (
+                      <div className={styles.areadiv}>
+                        <span className={styles.stateCellWrapper}>
+                          {area.stateName}{" "}
+                          <sup className={styles.distnotify}>
+                            {area.totalCnt}
+                          </sup>
+                        </span>
+                        <span className={styles.districtCellWrapper}>
+                          <div className={styles.districtCell}>
+                            {area?.districts?.slice(0, 10)?.map((item, j) => (
+                              <span key={j} className={styles.districtItem}>
+                                {item.districtName}
+                                <sup className={styles.distnotify}>
+                                  {item.totalDistCnt}
+                                </sup>
+                                {" ,  "}
+                              </span>
+                            ))}
+                          </div>
+
+                          <div className={styles.distbox}>
+                            {area?.districts?.map((dist, k) => (
+                              <span key={k} className={styles.distboxItem}>
+                                {dist.districtName}
+                                <sup className={styles.distnotify}>
+                                  {dist.totalDistCnt}
+                                </sup>
+                                {", "}
+                              </span>
+                            ))}
+                          </div>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
             ) : (
               <h2 style={{ width: "100%", textAlign: "center" }}>
                 No Data Found

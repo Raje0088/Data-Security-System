@@ -1,0 +1,155 @@
+.overlay {
+  width: 100%;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.content {
+  width: 90%;
+  height: 90%;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border:1px solid;
+}
+.tab {
+  width: 100%;
+  height: auto;
+  padding: 2px 5px;
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  background-color:  rgb(221, 221, 221);
+}
+.icon {
+  width: 25px;
+  height: 25px;
+  cursor: pointer;
+  color:white;
+}
+.icon:hover {
+  color: red;
+}
+.leftcontent {
+  width: 15%;
+  border-right: 1px solid;
+  padding: 10px 10px 10px 40px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.rightcontent {
+  width: 85%;
+  padding: 10px 40px 10px 40px;
+  display: flex;
+  flex-direction: column;
+}
+.rightcontent > div:first-child {
+  flex-shrink: 0; /* keep form fixed height */
+}
+
+.rightcontent h2 {
+  text-align: center;
+}
+.box {
+  display: flex;
+  border: 1px solid black;
+  padding: 5px;
+}
+.template-box {
+  width: 100%;
+  height: 250px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid black;
+  padding: 5px;
+}
+.template-box > span > input {
+  padding: 10px;
+  margin-right: 5px;
+   width:200px;
+}
+.template-box > span > select {
+  padding: 10px;
+  margin-right: 5px;
+  width:200px;
+}
+
+.template-box > span {
+  /* flex: 1; */
+  display: flex;
+  padding-bottom: 5px;
+}
+.template-box > span > textarea {
+  width: 100%;
+  flex: 1;
+  resize: none;
+  box-sizing: border-box;
+  padding: 5px;
+}
+.btndiv {
+  width: 200px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content:center;
+  flex-direction: column;
+  gap: 20px;
+}
+.btndiv button {
+  background: linear-gradient(45deg, #9101f1, #1170ff);
+  padding: 5px 10px;
+  color: white;
+  width: 80px;
+  border-radius: 20px;
+  cursor: pointer;
+  border: none;
+}
+.template-body {
+  margin-top: 10px;
+  border: 1px solid #3b3b3b;
+  overflow: auto; /* scrolls now */
+  flex: 1;
+  min-height: 0; /* VERY important */
+}
+
+.template-header {
+  background: gray;
+  padding: 10px 5px;
+  color: white;
+  display: grid;
+  grid-template-columns: 80px 200px 200px 150px 1fr;
+}
+.template-header p {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+.template-content {
+  background: rgb(202, 202, 202);
+  padding: 5px;
+  display: grid;
+  grid-template-columns: 80px 200px 200px 150px 1fr;
+  transition: background 0.2s ease;
+  font-size:14px;
+  cursor:pointer;
+}
+.template-content p {
+  text-wrap:nowrap;
+  text-overflow: ellipsis;
+  overflow:hidden;
+}
+.template-body > span {
+  border-bottom: 1px solid;
+}
+.template-content:nth-child(odd) {
+  background: rgb(185, 185, 185);
+}
+.template-content:hover {
+  background: rgb(238, 238, 238);
+}

@@ -34,7 +34,7 @@ const UserConfiguration = () => {
   const [veiwExcelData, setViewExcelData] = useState([]);
   const [excelData, setExcelData] = useState([]);
   const [selectedClients, setSelectedClients] = useState([]);
-  const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState({});
   const [assignAreaList, setAssignAreaList] = useState([]);
 
   useEffect(() => {
@@ -150,7 +150,7 @@ const UserConfiguration = () => {
       const area = userArea.filter(
         (item) =>
           item.generateUniqueId !== "SA" &&
-          item?.master_data_db?.area?.length > 0
+          item?.master_data_db?.productPermissions?.length > 0
       );
       console.log("filters", area);
       setAssignAreaList(area);
@@ -209,7 +209,7 @@ const UserConfiguration = () => {
       console.log("internal error", err);
     }
   };
-  const handleAssignExcelSheet = async (title, excelId) => {
+  const handleAssignExcelSheet = async (title, excelId, assignTo,idx) => {
     console.log("title, exec", title, excelId);
     try {
       const result = await axios.get(
@@ -218,20 +218,28 @@ const UserConfiguration = () => {
           params: {
             title: title,
             excelId: excelId,
-            assignTo: selectedUserId,
-            assignBy: userLoginId,
+            assignTo: assignTo,
+            assignBy: userLoginId?.userId,
           },
         }
       );
       console.log("result", result.data.message);
       alert(result.data.message);
-      setSelectedUserId("");
+      setSelectedUserId((prev) => ({
+        ...prev,
+        [idx]: "", // idx must be passed in or captured via closure
+      }));
     } catch (err) {
       console.log("internal error", err);
+       alert(err?.response?.data?.message);
     }
   };
 
   const handleRemoveArea = async (userId) => {
+    const isConfirmed = window.confirm(
+      "Are you sure to remove Complete region?"
+    );
+    if (!isConfirmed) return;
     try {
       const result = await axios.put(
         `${base_url}/task/remove-assignarea/${userId}`
@@ -567,47 +575,116 @@ const UserConfiguration = () => {
                     <td>{item.generateUniqueId}</td>
                     <td>{item.updatedAt.split("T")[0]}</td>
                     <td>{item.updatedAt.split("T")[1].split(".")[0]}</td>
-                    <td>
-                      {item.master_data_db.area.map((states) => (
-                        <tr>
-                          <td>
-                            <h4>
-                              {" "}
-                              {states.stateName} ({states.totalCnt})
-                            </h4>
-                          </td>
-                          <td>
-                            {states.district.map((dist, j) => (
-                              <span style={{ display: "flex" }}>
-                                <strong
-                                  style={{
-                                    background: [
-                                      "MUMBAI",
-                                      "KOLKATA",
-                                      "CHENNAI",
-                                      "DELHI",
-                                    ].includes(dist.districtName)
-                                      ? "yellow"
-                                      : "",
-                                  }}
-                                >
-                                  {dist.districtName}({dist.totalDistCnt})
-                                </strong>
-                                <span>
-                                  {" — "}
-                                  {dist.pincodes.length > 0 &&
-                                    dist.pincodes.map((pin, k) => (
-                                      <span>
-                                        {pin.code}{" "}
-                                        {k < dist.pincodes.length - 1 && ", "}
+                    <td className={styles.regionWrapper}>
+                      {/* {item.master_data_db.productPermissions.map(
+                        (prod, idx) => (
+                          <tr>
+                            <td>{prod.productName}</td>
+                            {prod.region.map(
+                              (states) => (
+                                <tr>
+                                  <td>
+                                    <h4>
+                                      {" "}
+                                      {states.stateName} ({states.totalCnt})
+                                    </h4>
+                                  </td>
+                                  <td>
+                                    {states?.districts?.map((dist, j) => (
+                                      <span style={{ display: "flex" }}>
+                                        <strong
+                                          style={{
+                                            background: [
+                                              "MUMBAI",
+                                              "KOLKATA",
+                                              "CHENNAI",
+                                              "DELHI",
+                                            ].includes(dist.districtName)
+                                              ? "yellow"
+                                              : "",
+                                          }}
+                                        >
+                                          {dist.districtName}(
+                                          {dist.totalDistCnt})
+                                        </strong>
+                                        <span>
+                                          {" — "}
+                                          {dist.pincodes.length > 0 &&
+                                            dist.pincodes.map((pin, k) => (
+                                              <span>
+                                                {pin.code}{" "}
+                                                {k < dist.pincodes.length - 1 &&
+                                                  ", "}
+                                              </span>
+                                            ))}
+                                        </span>
                                       </span>
                                     ))}
+                                  </td>
+                                </tr>
+                              )
+                            )}
+                          </tr>
+                        )
+                      )} */}
+
+                      {/* =======================*/}
+                      {item.master_data_db.productPermissions?.map(
+                        (place, i) => (
+                          <div key={i} className={styles.innerWrapper}>
+                            <span
+                              // style={{ fontSize: "10px", fontWeight: "700" }}
+                              className={styles.prodCellWrapper}
+                            >
+                              {place.productName}
+                            </span>
+
+                            {place.region.map((area, idx) => (
+                              <div className={styles.areadiv}>
+                                <span className={styles.stateCellWrapper}>
+                                  {area.stateName}{" "}
+                                  <sup className={styles.distnotify}>
+                                    {area.totalCnt}
+                                  </sup>
                                 </span>
-                              </span>
+                                <span className={styles.districtCellWrapper}>
+                                  <div className={styles.districtCell}>
+                                    {area?.districts
+                                      ?.slice(0, 10)
+                                      ?.map((item, j) => (
+                                        <span
+                                          key={j}
+                                          className={styles.districtItem}
+                                        >
+                                          {item.districtName}
+                                          <sup className={styles.distnotify}>
+                                            {item.totalDistCnt}
+                                          </sup>
+                                          {" ,  "}
+                                        </span>
+                                      ))}
+                                  </div>
+
+                                  <div className={styles.distbox}>
+                                    {area?.districts?.map((dist, k) => (
+                                      <span
+                                        key={k}
+                                        className={styles.distboxItem}
+                                      >
+                                        {dist.districtName}
+                                        <sup className={styles.distnotify}>
+                                          {dist.totalDistCnt}
+                                        </sup>
+                                        {", "}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </span>
+                              </div>
                             ))}
-                          </td>
-                        </tr>
-                      ))}
+                          </div>
+                        )
+                      )}
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <IoMdRemoveCircle
@@ -652,9 +729,12 @@ const UserConfiguration = () => {
                     <td>{item.excel_title_db}</td>
                     <td>
                       <select
-                        value={selectedUserId}
+                        value={selectedUserId[idx]}
                         onChange={(e) => {
-                          setSelectedUserId(e.target.value);
+                          setSelectedUserId((prev) => ({
+                            ...prev,
+                            [idx]: e.target.value,
+                          }));
                         }}
                       >
                         <option value="">--Select</option>
@@ -670,7 +750,9 @@ const UserConfiguration = () => {
                         onClick={() => {
                           handleAssignExcelSheet(
                             item.excel_title_db,
-                            item.dumpBy_db
+                            item.dumpBy_db,
+                            selectedUserId[idx],
+                            idx
                           );
                         }}
                         className={styles.custombtn}

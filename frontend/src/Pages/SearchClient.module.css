@@ -289,6 +289,17 @@ thead th {
   gap: 20px;
   box-sizing: border-box;
 }
+.minorfielddiv {
+  padding: 5px 50px;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  /* grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); */
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 20px;
+  box-sizing: border-box;
+  text-wrap:nowrap;
+}
 #selectAll {
   display: flex;
   gap: 10px;
@@ -329,8 +340,8 @@ thead th {
   font-weight: 500;
 }
 .checkbox-input {
-  width: 50%;
-  height: 50%;
+  width: 20px;
+  height: 20px;
 }
 
 .btn {
@@ -414,6 +425,7 @@ table {
 th,
 td {
   border: 1px solid;
+  white-space:nowrap;
 }
 th {
   position: sticky;
@@ -440,6 +452,8 @@ tr:nth-child(odd) {
   border-radius: 0px;
   background-color: red;
   color: white;
+  padding:2px 5px;
+  cursor: pointer;
 }
 
 .newtable {
@@ -523,6 +537,31 @@ tr:nth-child(odd) {
 }
 .blurs{
   filter: blur(4px);
+}
+.duplicate-popup{
+  background:rgba(0, 0, 0, 0.349);
+  width:100%;
+  height:100vh;
+  position:fixed;
+  top:0;
+  left:0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.duplicate-content{
+  width:40%;
+  height:auto;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 1px 2px 20px blue;
+  padding:10px;
+} 
+.duplicate-filters{
+  display: flex;
+  flex-direction:column;
+  padding:20px;
+  gap:10px;
 }
 @media screen and (max-width: 480px) {
   .filters {

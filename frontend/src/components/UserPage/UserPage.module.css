@@ -507,7 +507,7 @@
   position: absolute;
   background-color: rgba(102, 124, 124, 0.62);
   padding: 15px 10px 5px 10px;
-  bottom: 40px;
+  bottom: 80px;
   right: 5px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -590,6 +590,26 @@
 }
 .popups table th {
   border: 1px solid black;
+}
+.recovery-popup{
+  width: 100%;
+  position: absolute;
+  bottom: -130%;
+  right: 0;
+ font-size: 13px;
+  font-weight: 600;
+}
+.recovery-select{
+  width: 100%;
+  padding: 2px 5px;
+}
+
+.quickfeed{
+  padding:10px;
+  display:flex;
+  gap:5px;
+  align-items: center;
+  justify-content: space-between;
 }
 
 @media (min-width: 480px) and (max-width: 1080px) {
@@ -758,6 +778,10 @@
   .receiptspan {
     position: static;
   }
+  .recovery-popup{
+  position: static;
+}
+
 }
 @media (max-width: 480px) {
   .main {
@@ -926,5 +950,10 @@
   }
   .receiptspan {
     position: static;
+  }
+      .recovery-popup{
+    position: static;
+    margin:5px 0;
+    display:block;
   }
 }

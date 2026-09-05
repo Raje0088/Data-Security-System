@@ -11,7 +11,7 @@ const CustomSelect = ({
   value = [],
   isMulti = true,
 }) => {
-  const [selectedOptions, setSelectedOptions] = useState(isMulti ? [] : null);
+  const [selectedOptions, setSelectedOptions] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
   const handleOutsideClose = useRef(null);
@@ -32,10 +32,17 @@ const CustomSelect = ({
   }, []);
 
   useEffect(() => {
-    if (JSON.stringify(value) !== JSON.stringify(selectedOptions)) {
-      setSelectedOptions(value || (isMulti ? [] : null));
+    const normalized = Array.isArray(value) ? value : value ? [value] : [];
+
+    if (JSON.stringify(normalized) !== JSON.stringify(selectedOptions)) {
+      setSelectedOptions(normalized);
     }
   }, [value, isMulti]);
+  // useEffect(() => {
+  //   if (JSON.stringify(value) !== JSON.stringify(selectedOptions)) {
+  //     setSelectedOptions(value || (isMulti ? [] : null));
+  //   }
+  // }, [value, isMulti]);
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -56,7 +63,9 @@ const CustomSelect = ({
         Array.isArray(selectedOptions) &&
         selectedOptions.some((item) => item.value === option.value);
     } else {
-      isSelected = selectedOptions?.value === option.value;
+      isSelected =
+        Array.isArray(selectedOptions) &&
+        selectedOptions[0]?.value === option.value;
     }
 
     let updated;
@@ -65,7 +74,7 @@ const CustomSelect = ({
         ? selectedOptions.filter((item) => item.value !== option.value)
         : [...selectedOptions, option];
     } else {
-      updated = isSelected ? null : option;
+      updated = isSelected ? [] : [option];
       setIsOpen(false);
     }
 
@@ -80,7 +89,10 @@ const CustomSelect = ({
         selectedOptions.some((item) => item.value === option.value)
       );
     } else {
-      return selectedOptions?.value === option.value;
+      return (
+        Array.isArray(selectedOptions) &&
+        selectedOptions[0]?.value === option.value
+      );
     }
   };
 
@@ -92,8 +104,8 @@ const CustomSelect = ({
             ? selectedOptions.length > 0
               ? `${selectedOptions.length} Option Selected`
               : `-- ${placeholder} --`
-            : selectedOptions && selectedOptions.label
-            ? selectedOptions.label
+            : selectedOptions[0]?.label
+            ? selectedOptions[0].label
             : `-- ${placeholder} --`}
         </div>
 
@@ -107,7 +119,6 @@ const CustomSelect = ({
             openUpward ? styles["upward"] : ""
           }`}
         >
-
           {options.map((option, index) => (
             <div
               key={option.value || index}
@@ -119,21 +130,21 @@ const CustomSelect = ({
               }}
               onClick={() => handleCheckboxChange(option)} // ✅ whole div clickable
             >
-              <div className={styles.checkboxdiv} >
+              <div className={styles.checkboxdiv}>
                 <input
                   type="checkbox"
                   checked={isOptionSelected(option)}
                   readOnly // ✅ prevents double toggle
                 />
                 <span>{option.label || option.value}</span>
-              </div>  
+              </div>
             </div>
           ))}
         </div>
       )}
     </div>
 
-              /* {options.map((option, index) => (
+    /* {options.map((option, index) => (
             <span key={index} onClick={() => handleCheckboxChange(option)}>
               <div
                 className={styles["dropdown-content"]}
@@ -156,7 +167,6 @@ const CustomSelect = ({
               </div>
             </span>
           ))} */
-
 
     // <div className="dropdown-container" ref={handleOutsideClose}>
     //   <div className="dropdown-header" onClick={toggleDropdown}>

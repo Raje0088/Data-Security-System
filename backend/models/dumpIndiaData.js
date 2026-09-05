@@ -1,12 +1,9 @@
 const mongoose = require("mongoose");
 
 const pinCodeSchema = new mongoose.Schema({
-    pincode_db:String,
+    country_db:String,
     state_db:String,
     district_db:String,
-    taluka_db: String,
-    village_db:String,
-    country_db:String,
     pincode_db: String,
     latterPincode_id:String,
 })

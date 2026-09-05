@@ -196,17 +196,17 @@ const ProgressReport = ({ userLoginId = "E02_SA" }) => {
               <div className={styles["graphdiv-leadbox"]}>
                 <h2>Installation</h2>
                 <h2>
-                  {showDailyReport.length > 0
+                  {showDailyReport?.length > 0
                     ? showDailyReport[0].daily_installation_completed_db
                     : 0}
                 </h2>
                 <h2>
-                  {showDailyReport.length > 0
+                  {showDailyReport?.length > 0
                     ? showDailyReport[0].daily_installation_assigned_db
                     : 0}
                 </h2>
                 <h2 style={{ background: "red" }}>
-                  {showDailyReport.length > 0
+                  {showDailyReport?.length > 0
                     ? showDailyReport[0].daily_installation_assigned_db 
                     : 0}
                 </h2>

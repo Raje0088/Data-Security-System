@@ -7,6 +7,7 @@ import { MdOutlineDownloadDone } from "react-icons/md";
 import { IoHourglassOutline } from "react-icons/io5";
 import { base_url } from "../config/config";
 import { AuthContext } from "../context-api/AuthContext";
+import { MdOutlineDeleteOutline } from "react-icons/md";
 
 const Remainder = ({ remainder, setRemainder, refreshRemainder }) => {
   const { userLoginId } = useContext(AuthContext);
@@ -22,41 +23,48 @@ const Remainder = ({ remainder, setRemainder, refreshRemainder }) => {
     InstallationCount = 0,
     TrainingCount = 0,
     SupportCount = 0,
-    RecoveryCount = 0;
+    RecoveryCount = 0,
+    AmcCount = 0;
 
   Allcount = remainder.length;
-  DemoCount = remainder.filter((item) => item.stage_db === "Demo").length;
+  DemoCount = remainder.filter((item) => item?.stage_db === "Demo").length;
   FollowUpCount = remainder.filter(
-    (item) => item.stage_db === "FollowUp"
+    (item) => item?.stage_db === "Follow up",
   ).length;
-  HotCount = remainder.filter((item) => item.stage_db === "Hot").length;
+  HotCount = remainder.filter((item) => item?.stage_db === "Hot").length;
   InstallationCount = remainder.filter(
-    (item) => item.stage_db === "Installation"
+    (item) => item?.stage_db === "Installation",
   ).length;
   TrainingCount = remainder.filter(
-    (item) => item.stage_db === "Training"
+    (item) => item?.stage_db === "Training",
   ).length;
-  SupportCount = remainder.filter((item) => item.stage_db === "Support").length;
+  SupportCount = remainder.filter(
+    (item) => item?.stage_db === "Support",
+  ).length;
   RecoveryCount = remainder.filter(
-    (item) => item.stage_db === "Recovery"
+    (item) => item?.stage_db === "Recovery",
   ).length;
+  AmcCount = remainder.filter((item) => item?.stage_db === "Amc").length;
   console.log("rema", filterRemainder);
 
+
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const result = await axios.get(`${base_url}/remainders/status`, {
-          params: { date: remainderDate, userId: userLoginId },
-        });
-        console.log("yo", result.data.result);
-        setFilterRemainder(result.data.result);
-        refreshRemainder();
-        // distributeRemainders("All");
-      } catch (err) {
-        console.log("interna error", err);
-      }
-      setRemainderDate(null);
-    };
+      const fetch = async () => {
+    try {
+      const result = await axios.get(`${base_url}/remainders/status`, {
+        params: {
+          date: remainderDate,
+          userId: userLoginId?.userId,
+          roleType: userLoginId?.roleType,
+        },
+      });
+      setFilterRemainder(result.data.result);
+      refreshRemainder();
+    } catch (err) {
+      console.log("interna error", err);
+    }
+    setRemainderDate(null);
+  };
     if (remainderDate !== null) {
       fetch();
     }
@@ -73,7 +81,7 @@ const Remainder = ({ remainder, setRemainder, refreshRemainder }) => {
       result = remainder.filter((item) => item.stage_db === value);
       setSetter(idx);
     }
-    if (value === "FollowUp") {
+    if (value === "Follow Up") {
       result = remainder.filter((item) => item.stage_db === value);
       setSetter(idx);
     }
@@ -97,19 +105,42 @@ const Remainder = ({ remainder, setRemainder, refreshRemainder }) => {
       result = remainder.filter((item) => item.stage_db === value);
       setSetter(idx);
     }
+    if (value === "Amc") {
+      result = remainder.filter((item) => item.stage_db === value);
+      setSetter(idx);
+    }
     setFilterRemainder(result);
   };
 
-  const redirectToClientPage = (id, db) => {
+  const redirectToClientPage = (id, db, taskId) => {
     const filterId = filterRemainder.filter((item) => item.client_id === id);
     const stg = filterId.map((item) => item.stage_db);
     if (db === "Client") {
-      navigate("/client-page", { state: { id, stg, from: "remainder" } });
+      navigate("/client-page", {
+        state: { id, stg, from: "remainder", taskId: taskId },
+      });
     } else {
-      navigate("/userpage", { state: { id, stg, from: "remainder" } });
+      navigate("/userpage", {
+        state: { id, stg, from: "remainder", taskId: taskId },
+      });
     }
   };
 
+  const handleDeleteReminder = async (id) => {
+    const isConfirm = window.confirm("Are you sure to delete this reminder?");
+
+    if (!isConfirm) return;
+    try {
+      const res = await axios.delete(`${base_url}/remainders/rem-del/${id}`);
+      alert(res.data.message);
+      const newRem = remainder.filter((item,idx)=>item._id !== id)
+      console.log("newRem", newRem)
+      setRemainder(newRem)
+      setFilterRemainder(newRem)
+    } catch (err) {
+      console.log("internal error", err);
+    }
+  };
   return (
     <div className={styles.main}>
       <div className={styles.header}>
@@ -149,7 +180,7 @@ const Remainder = ({ remainder, setRemainder, refreshRemainder }) => {
           <button
             style={{ background: setter === 3 ? "hsl(241, 100%, 50%)" : "" }}
             onClick={() => {
-              distributeRemainders("FollowUp", 3);
+              distributeRemainders("Follow Up", 3);
             }}
           >
             Follow Up
@@ -223,6 +254,17 @@ const Remainder = ({ remainder, setRemainder, refreshRemainder }) => {
             <span className={styles.highlight}>{RecoveryCount}</span>
           )}
         </div>
+        <div className={styles.btndiv}>
+          <button
+            style={{ background: setter === 9 ? "hsl(241, 100%, 50%)" : "" }}
+            onClick={() => {
+              distributeRemainders("Amc", 9);
+            }}
+          >
+            Amc
+          </button>
+          {AmcCount > 0 && <span className={styles.highlight}>{AmcCount}</span>}
+        </div>
       </div>
       <div className={styles.remainderdiv}>
         {filterRemainder.length > 0 && (
@@ -231,6 +273,7 @@ const Remainder = ({ remainder, setRemainder, refreshRemainder }) => {
               <th id={styles.ths}>Sr No</th>
               <th id={styles.ths}>Client Id</th>
               <th id={styles.ths}>Client Name</th>
+              <th id={styles.ths}>Product</th>
               <th id={styles.ths}>Stage</th>
               <th id={styles.ths}>Date</th>
               <th id={styles.ths}>Time</th>
@@ -239,6 +282,7 @@ const Remainder = ({ remainder, setRemainder, refreshRemainder }) => {
                 Status
               </th>
               <th>User Id</th>
+              <th>Delete</th>
             </tr>
             {filterRemainder.length > 0 &&
               filterRemainder.map((item, idx) => (
@@ -248,17 +292,22 @@ const Remainder = ({ remainder, setRemainder, refreshRemainder }) => {
                     <strong
                       className={styles.text}
                       onClick={() => {
-                        redirectToClientPage(item.client_id, item.database_db);
+                        redirectToClientPage(
+                          item.client_id,
+                          item.database_db,
+                          item.taskId_db,
+                        );
                       }}
                     >
-                      {item.client_id}
+                      {item.client_id || "NA"}
                     </strong>
                   </td>
-                  <td id={styles.tds}>{item.client_name_db}</td>
-                  <td id={styles.tds}>{item.stage_db}</td>
-                  <td id={styles.tds}>{item.date_db}</td>
-                  <td id={styles.tds}>{item.time_db}</td>
-                  <td id={styles.tds}>{item.operation_db}</td>
+                  <td id={styles.tds}>{item.client_name_db || "NA"}</td>
+                  <td id={styles.tds}>{item.product_db || "NA"}</td>
+                  <td id={styles.tds}>{item.stage_db || "NA"}</td>
+                  <td id={styles.tds}>{item.date_db || "NA"}</td>
+                  <td id={styles.tds}>{item.time_db || "NA"}</td>
+                  <td id={styles.tds}>{item.operation_db || "NA"}</td>
                   <td id={styles.tds} className={styles.align}>
                     {item.status_db == true ? (
                       <MdOutlineDownloadDone />
@@ -267,6 +316,21 @@ const Remainder = ({ remainder, setRemainder, refreshRemainder }) => {
                     )}
                   </td>
                   <td>{item.userId_db}</td>
+                  {(userLoginId?.roleType === "Superadmin" ||
+                    userLoginId?.roleType === "Admin") && (
+                    <td className={styles.align}>
+                      <MdOutlineDeleteOutline
+                        onClick={() => {
+                          handleDeleteReminder(item._id);
+                        }}
+                        style={{
+                          fontSize: "16px",
+                          cursor: "pointer",
+                          color: "red",
+                        }}
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
           </table>

@@ -1,7 +1,14 @@
 const { clientModel } = require("../models/clientModel.js")
+const {clientHistoryModel} = require("../models/historyModel.js")
 const { clientSubscriptionModel } = require("../models/clientSubscriptionModel")
 const { rawDataModel } = require("../models/rawDataModel.js")
-const {getNextGobalCounterSequence} = require("../utils/getNextSequence.js")
+const { getNextGobalCounterSequence } = require("../utils/getNextSequence.js")
+const { getDateAndTime } = require("../utils/getLocalTimeAndDate.js")
+const { applyRBAC, applyRBACwithoutProduct } = require("../utils/RBAC.js")
+
+const currentDateAndTime = getDateAndTime()
+const currentDate = currentDateAndTime.split("T")[0]
+const currentTime = currentDateAndTime.split("T")[1]
 
 const lastUpdatedTracker = async (clientId) => {
     try {
@@ -26,12 +33,14 @@ const lastUpdatedTracker = async (clientId) => {
     }
 }
 
+// CREATE USER
 const createSubscripbeUser = async (req, res) => {
     try {
-        console.log("req body ======= create User", req.body)
+
+        // console.log("req body ======= create User", req.body)
         const { clientSerialNo, clientId, userId, bussinessNames, clientName,
             numbers, emails, website,
-            addresses, pincode, district,
+            addresses, pincode, district, shopType,
             state, assignBy, assignTo,
             product, stage, quotationShare,
             expectedDate, remarks, label,
@@ -107,11 +116,12 @@ const createSubscripbeUser = async (req, res) => {
             product_db: product,
             country_db: country,
             time_db: followUpTime,
-            date_db: new Date().toLocaleDateString('en-GB'),
+            date_db: currentDate,
             action_db: action,
             database_status_db: "User",
             tracking_db: tracker,
             label_db: label,
+            shopType_db: shopType,
             amountDetails_db: amountDetails,
             amountHistory_db: amountHistory,
         })
@@ -125,12 +135,14 @@ const createSubscripbeUser = async (req, res) => {
     }
 }
 
+//UPDATE USER
 const updateUserScription = async (req, res) => {
     try {
+
         const clientId = req.params.id;
         const { clientSerialNo, userId, bussinessNames, clientName,
             numbers, emails, website,
-            addresses, pincode, district,
+            addresses, pincode, district, shopType,
             state, assignBy, assignTo,
             product, stage, quotationShare,
             expectedDate, remarks, label,
@@ -221,10 +233,11 @@ const updateUserScription = async (req, res) => {
                     product_db: product,
                     country_db: country,
                     time_db: followUpTime,
-                    date_db: new Date().toLocaleDateString('en-GB'),
+                    date_db: currentDate,
                     action_db: action,
                     database_status_db: "User",
                     label_db: label,
+                    shopType_db: shopType,
                     tracking_db: updatedTracker,
                     amountDetails_db: amountDetails,
                     amountHistory_db: amountHistory,
@@ -246,7 +259,7 @@ const updateUserScription = async (req, res) => {
             }
         )
         lastUpdatedTracker(clientId)
-        console.log("User Updated Successfully", result)
+        // console.log("User Updated Successfully", result)
         res.status(200).json({ message: "User Updated Successfully", result })
     } catch (err) {
         console.log("internal error", err)
@@ -254,6 +267,7 @@ const updateUserScription = async (req, res) => {
     }
 }
 
+//SEARCH USER IN USER PAGE THROUGH SEARCH BUTTON
 const searchUserSubsciption = async (req, res) => {
     try {
         const clientSubscriptionId = req.params.id;
@@ -266,12 +280,13 @@ const searchUserSubsciption = async (req, res) => {
     }
 }
 
+// CHECK DOES CLIENT ID IS IN USER MODEL
 const CheckUserSubsciptionToRedirect = async (req, res) => {
     try {
         const clientId = req.params.id;
         const result = await clientSubscriptionModel.findOne({ client_id: clientId })
-        console.log("user found ", result)
-        res.status(200).json({ message: "user found", result })
+        if (!result) return res.status(201).json({ message: "User not found, you can continue on client page", exists: false })
+        res.status(200).json({ message: "User Exist, Please Switch to User Page", result, exists: true })
     } catch (err) {
         console.log("internal error", err)
         res.status(500).json({ message: "internal error", err: err.message })
@@ -293,22 +308,24 @@ const getAllUserSubsriptionIds = async (req, res) => {
 //FILTER ALL USER DB
 const filterClientSubscriptionData = async (req, res) => {
     try {
-        const {userId,clientId, clientName, opticalName, address, mobile, email, district, state, country, hot,
-            followUp, demo, installation, product,pincode, defaulter, recovery, lost, dateFrom, dateTo, clientType, } = req.body;
+        const { userId, clientId, clientName, opticalName, address, mobile, email, district, state, country, hot,
+            followUp, demo, installation, deactivate, amc, masterData, product, pincode, defaulter, recovery, lost, dateFrom, dateTo, clientType, } = req.body;
         const { page = 1 } = req.body;
         const limit = 500;
         const skip = (page - 1) * limit;
+
         console.log("query", req.query)
 
+
         const filters = {}
-                            if (userId !== "SA") {
-           filters["master_data_db.assignTo"] = userId;
-            console.log("userId", userId)
-        }
+        // if (userId !== "SA" && userId !== "A01_SA") {
+        //     filters["master_data_db.assignTo"] = userId;
+        //     console.log("userId", userId)
+        // }
         const orConditions = [];
-            if(clientId) filters.client_id = clientId
+        if (clientId) filters.client_id = clientId
         if (clientName) filters.client_name_db = { $regex: clientName, $options: "i" }
-         if (pincode) filters.pincode_db = {$in:pincode}
+        if (pincode) filters.pincode_db = { $in: pincode }
         if (opticalName) {
             orConditions.push(
                 { optical_name1_db: { $regex: opticalName, $options: "i" } },
@@ -326,7 +343,7 @@ const filterClientSubscriptionData = async (req, res) => {
 
         if (mobile) {
             orConditions.push(
-                { mobile_1_db: { $regex: mobile, $options: "i" } }, 
+                { mobile_1_db: { $regex: mobile, $options: "i" } },
                 { mobile_2_db: { $regex: mobile, $options: "i" } },
                 { mobile_3_db: { $regex: mobile, $options: "i" } }
             );
@@ -345,8 +362,8 @@ const filterClientSubscriptionData = async (req, res) => {
         if (district) filters.district_db = { $regex: district, $options: "i" }
         if (state) filters.state_db = { $regex: state, $options: 'i' }
         if (country) filters.country_db = { $regex: country, $options: 'i' }
-        if (product) filters.product_db = { $regex: product, $options: "i" };
-
+        if (product) filters["product_db.label"] = { $regex: product, $options: "i" }
+        if (amc) filters["tracking_db.amc_db.completed"] = true
         if (hot) filters["tracking_db.hot_db.completed"] = hot
         if (followUp) filters["tracking_db.follow_up_db.completed"] = followUp;
         if (demo) filters["tracking_db.demo_db.completed"] = demo
@@ -355,11 +372,39 @@ const filterClientSubscriptionData = async (req, res) => {
         if (recovery) filters["tracking_db.recovery_db.completed"] = recovery
         if (lost) filters["tracking_db.lost_db.completed"] = lost
         if (dateFrom && dateTo) filters.date_db = { $gte: dateFrom, $lte: dateTo }
-         filters.isActive_db = true;
+        if (deactivate === true) { filters.isActive_db = false }
+        else {
+            filters.isActive_db = true;
+
+        }
 
         const result = await clientSubscriptionModel.find(filters).sort({ client_id: 1 }).skip(skip).limit(limit)
         const totalCount = await clientSubscriptionModel.countDocuments(filters)
-        res.status(200).json({ message: "Client det.completedails filter result", page: page, limit: limit, totalCount: totalCount, resultCount: result.length, result, db: "User Database" })
+
+        // ===============ADDING VIEW PERMISSION IN RECORDS================================================
+
+        let mergedRecords
+        if (masterData.roleType === "Superadmin") {
+            mergedRecords = result.map(doc => ({
+                ...(doc.toObject ? doc.toObject() : doc),
+                isView: true,
+                isDelete: true,
+                isUpdate: true,
+                isEdit: true,
+            }));
+
+        } else {
+            if (product) {
+                const selectProdPerm = masterData.masterData.productPermissions.filter((prod) => prod.productName === product)
+                const allowedPerm = selectProdPerm[0].permission
+                const allowedRegion = selectProdPerm[0].region
+
+                mergedRecords = applyRBAC(result, allowedRegion, allowedPerm, masterData.permission)
+            } else {
+                mergedRecords = applyRBACwithoutProduct(result, masterData.masterData.productPermissions, masterData.permission)
+            }
+        }
+        res.status(200).json({ message: "Client det.completedails filter result", page: page, limit: limit, totalCount: totalCount, resultCount: result.length, result: mergedRecords, db: "User Database" })
     } catch (err) {
         console.log("internal error", err)
         res.status(500).json({ message: "internal error", err: err.message })
@@ -382,13 +427,38 @@ const deactivateUserData = async (req, res) => {
         const result = await clientSubscriptionModel.findOneAndUpdate(
             { client_id: clientId, isActive_db: true },
             { $set: { isActive_db: false } },
-            {new:true},
+            { new: true },
         )
-
-        res.status(200).json({ message: `${clientId} deactivated successfully`, result })
+        const resultHistory = await clientHistoryModel.updateMany(
+            { client_id: clientId, isActive_db: true, database_status_db: "User" },
+            { $set: { isActive_db: false } },
+            { new: true },
+        )
+        console.log("hsitory",resultHistory)
+        res.status(200).json({ message: `${clientId} deactivated successfully with history ${resultHistory.modifiedCount}`, result })
     } catch (err) {
         res.status(500).json({ message: "Error during deactivation", err: err.message });
         console.log("Error during deactivation", err)
+    }
+}
+const activateUserData = async (req, res) => {
+    try {
+        const clientId = req.params.id;
+        const result = await clientSubscriptionModel.findOneAndUpdate(
+            { client_id: clientId, isActive_db: false },
+            { $set: { isActive_db: true } },
+            { new: true },
+        )
+        const resultHistory = await clientHistoryModel.updateMany(
+            { client_id: clientId, isActive_db: false, database_status_db:"User" },
+            { $set: { isActive_db: true } },
+            { new: true },
+        )
+        console.log("r===========",result,clientId)
+        res.status(200).json({ message: `${clientId} activated successfully with history ${resultHistory.modifiedCount}`, result })
+    } catch (err) {
+        res.status(500).json({ message: "Error during activation", err: err.message })
+        console.log("Error during activation ", err)
     }
 }
 
@@ -463,11 +533,11 @@ const searchAllUserThroughQuery = async (req, res) => {
 //This is post request because i am passing array get not support array so using post method
 const checkAlreadyDataExist = async (req, res) => {
     try {
-        const { bussinessNames, numbers, emails, pincode, district, state } = req.body;
-        console.log("regexArray", bussinessNames, numbers, emails, pincode, district, state)
+        const { bussinessNames, masterData, numbers, emails, pincode, district, state } = req.body;
+        console.log("regexArray", masterData, bussinessNames, numbers, emails, pincode, district, state)
 
-        
-        let filters = {$and:[]}
+
+        let filters = { $and: [] }
         if (bussinessNames) {
             const nameField = bussinessNames?.map((t) => (t.value.trim()))
             const regexArray = nameField?.map(val => new RegExp(val, "i"))
@@ -477,45 +547,57 @@ const checkAlreadyDataExist = async (req, res) => {
                 { optical_name2_db: { $in: regexArray } },
                 { optical_name3_db: { $in: regexArray } },
             ]
-            filters.$and.push({$or:opticalNameOr})
+            filters.$and.push({ $or: opticalNameOr })
         }
 
-        if(numbers){
-            const mobileField = numbers.map((t)=>t.value.trim().toString())
+        if (numbers) {
+            const mobileField = numbers.map((t) => t.value.trim().toString())
             const mobileOr = [
-                {mobile_1_db:{$in:mobileField}},
-                {mobile_2_db:{$in:mobileField}},
-                {mobile_3_db:{$in:mobileField}},
+                { mobile_1_db: { $in: mobileField } },
+                { mobile_2_db: { $in: mobileField } },
+                { mobile_3_db: { $in: mobileField } },
             ]
-            filters.$and.push({$or:mobileOr})
+            filters.$and.push({ $or: mobileOr })
         }
 
-        if(emails){
-            const emailField = emails.map((i)=>i.value.trim())
+        if (emails) {
+            const emailField = emails.map((i) => i.value.trim())
             const regexEmail = emailField.map(val => new RegExp(val, "i"))
-                const emailOr = [
+            const emailOr = [
                 { email_1_db: { $in: regexEmail } },
                 { email_2_db: { $in: regexEmail } },
                 { email_3_db: { $in: regexEmail } },
             ]
-            filters.$and.push({$or:emailOr})
+            filters.$and.push({ $or: emailOr })
         }
-        if(pincode){
-            filters.$and.push({pincode_db : pincode})
+        if (pincode) {
+            filters.$and.push({ pincode_db: pincode })
         }
-        if(district){
-            filters.$and.push({district_db : district})
+        if (district) {
+            filters.$and.push({ district_db: district })
         }
-        if(state){
-            filters.$and.push({state_db:state})
+        if (state) {
+            filters.$and.push({ state_db: state })
         }
         const result = await clientSubscriptionModel.find(filters)
+        let mergedRecords;
+        if (masterData.roleType === "Superadmin") {
+            mergedRecords = result.map(doc => ({
+                ...(doc.toObject ? doc.toObject() : doc),
+                isView: true,
+                isDelete: true,
+                isUpdate: true,
+                isEdit: true,
+            }));
+        } else {
+            mergedRecords = applyRBACwithoutProduct(result, masterData.masterData.productPermissions, masterData.masterData.permission)
+        }
 
-        res.status(200).json({ message: `Client already exist`,totalCount: result.length, result: result})
+        res.status(200).json({ message: `Client already exist`, totalCount: result.length, result: mergedRecords })
     } catch (err) {
         res.status(500).json({ message: "Error during deactivation", err: err.message });
         console.log("Error during deactivation", err)
     }
 }
 
-module.exports = { createSubscripbeUser,checkAlreadyDataExist, searchAllUserThroughQuery,CheckUserIdforExcelSheet, filterClientSubscriptionData, getAllUserSubsriptionIds, updateUserScription, searchUserSubsciption, CheckUserSubsciptionToRedirect,deactivateUserData }  
+module.exports = {activateUserData, createSubscripbeUser, checkAlreadyDataExist, searchAllUserThroughQuery, CheckUserIdforExcelSheet, filterClientSubscriptionData, getAllUserSubsriptionIds, updateUserScription, searchUserSubsciption, CheckUserSubsciptionToRedirect, deactivateUserData }  

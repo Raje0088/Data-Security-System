@@ -8,7 +8,7 @@ import { RequestModalContext } from "../context-api/GlobalModalContext";
 const RequestModal = () => {
   const { modalContent, handleOpenModal, handleCloseModal } =
     useContext(RequestModalContext);
-  console.log("RequestModal render, modalContent =", modalContent);
+  // console.log("RequestModal render, modalContent =", modalContent);
 
   if (!modalContent) {
     return null;

@@ -29,7 +29,7 @@ const ScheduleOptima = (props) => {
   const taskKeyMap = {
     "New Data Add": "new_data_db",
     "No of New Calls": "new_calls_db",
-    Leads: "lead_db",
+    Leads: "leads_db",
     Demo: "demo_db",
     "Follow Up": "followUp_db",
     Target: "target_db",
@@ -42,7 +42,7 @@ const ScheduleOptima = (props) => {
   useEffect(() => {
     const fetch = async () => {
       const result = await axios.get(
-        `${base_url}/users/search-by-user/${userLoginId}`
+        `${base_url}/users/search-by-user/${userLoginId?.userId}`
       );
       console.log("product list hai", result.data.result?.assignProduct);
       setUserProduct(
@@ -59,7 +59,7 @@ const ScheduleOptima = (props) => {
 
       if (!showProgressMode) {
         const result = await axios.get(
-          `${base_url}/schedule/get-goals/${userLoginId}`
+          `${base_url}/schedule/get-goals/${userLoginId?.userId}`
         );
         
         setSelectDate(result.data.result.date_todo_db)
@@ -122,7 +122,7 @@ const ScheduleOptima = (props) => {
     <div className={styles.main}>
       <div className={styles.heading}>
         <span>
-          <h4>{userLoginId}</h4>
+          <h4>{userLoginId?.userId}</h4>
         </span>
         <span>
           <h3 style={{ textAlign: "center" }}>Schedule Goal</h3>
@@ -215,9 +215,9 @@ const ScheduleOptima = (props) => {
         <button className={styles.custombtn} onClick={handleGoalsShow}>
           Refresh
         </button>
-        {props.onShowOpenRequest && (
+        {/* {props.onShowOpenRequest && (
           <button onClick={props.onCheckExtraTask}>Open Request</button>
-        )}
+        )} */}
       </div>
     </div>
   );

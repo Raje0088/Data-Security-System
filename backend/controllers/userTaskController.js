@@ -111,11 +111,9 @@ const deleteUserForm = async (req, res) => {
 const searchUserTaskFormId = async (req, res) => {
     try {
         const generateUniqueId = req.params.id;
-        console.log("generateUniqueId", generateUniqueId)
         const result = await userFormModel.findOne({
             assignToId_db: generateUniqueId,
         }).sort({ _id: -1 })
-        console.log("result", result)
         res.status(200).json({ message: "User Form  found", result });
 
     } catch (err) {

@@ -10,7 +10,9 @@ const Backup = () => {
   const [userPassword, setUserPassword] = useState("");
 
   useEffect(() => {
+    console.log("socket start")
     socket.on("restoreProgress", (data) => {
+      console.log("restoreProgress",data)
       setProgress(
         `Progress: ${data.restoredMB} MB/${data.totalMB} MB (${data.percent}%)`
       );
@@ -28,7 +30,7 @@ const Backup = () => {
       socket.off("restoreProgress");
       socket.off("restoreComplete");
     };
-  }, []);
+  }, [socket]);
 
   const openInput = () => {
     if (!userId || !userPassword) {

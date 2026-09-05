@@ -1,0 +1,41 @@
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 25px;
+}
+.switch input {
+  opacity: 0px;
+  width: 0;
+  height: 0;
+}
+
+.lever {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #4d4d4d;
+  transition: 0.4s;
+  border-radius: 35px;
+}
+.lever:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 5px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+input:checked + .lever {
+  background-color: #00ce22; /* green */
+}
+
+input:checked + .lever:before {
+  transform: translateX(30px);
+}

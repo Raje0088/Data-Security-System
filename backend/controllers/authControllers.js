@@ -17,11 +17,11 @@
 //         res.status(500).json({ msg: "Server error", error: err.message });
 //     }
  
-// }
+// } 
 
 // exports.login = async (req, res) => {
 //     try {
-
+ 
 //         const { email, password } = req.body;
 //         const user = await UserModel.findOne({ email });
 //         if (!user || !(await bcrypt.compare(password, user.password))) {

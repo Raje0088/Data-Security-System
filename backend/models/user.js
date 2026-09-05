@@ -1,20 +1,31 @@
 const mongoose = require("mongoose");
 
 const pincodeSchema = new mongoose.Schema({
-    code:{type:String},
-    clientIds:{type:[String]}
+    code: { type: String },
+    clientIds: { type: [String] }
 })
 
 const districtSchema = new mongoose.Schema({
-    districtName :{type:String},
-    totalDistCnt:{type:Number, default:0},
-    pincodes:[pincodeSchema],
+    districtName: { type: String },
+    totalDistCnt: { type: Number, default: 0 },
+    pincodes: [pincodeSchema],
 })
 
 const stateSchema = new mongoose.Schema({
-    stateName:{type:String},
-    totalCnt:{type:Number},
-    district:[districtSchema]
+    stateName: { type: String },
+    totalCnt: { type: Number, default: 0 },
+    districts: [districtSchema]
+})
+const productSchema = new mongoose.Schema({
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: "assignProductModel" },
+    productName: { type: String },
+    permission: {
+        update_P: { type: Boolean, default: false },
+        delete_P: { type: Boolean, default: false },
+        edit_P: { type: Boolean, default: false },
+        view_P: { type: Boolean, default: false },
+    },
+    region: [stateSchema],
 })
 
 const UserSchema = new mongoose.Schema({
@@ -39,14 +50,15 @@ const UserSchema = new mongoose.Schema({
     password: String,
     isActive: { type: String, enum: ["Active", "Deactive"], default: "Active" },
     master_data_db: {
-        excelId: { 
-            title: String ,
-            excelId:String,
+        excelId: {
+            title: String,
+            excelId: String,
         },
-        area: [stateSchema],
-    }
+        productPermissions: [productSchema],
+    },
+      refreshToken: String,
 }, { timestamps: true });
- 
+
 const userHistorSchema = new mongoose.Schema({
     userHistory: { type: Object },
 })

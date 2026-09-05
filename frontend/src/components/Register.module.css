@@ -78,6 +78,26 @@
   height: auto;
   padding: 10px 20%;
 }
+.subheading-perm {
+  width: 100%;
+  padding: 10px 20%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.permission-btn{
+  padding:5px 10px;
+  border-radius: 20px;
+  border: 2px solid  white;
+  cursor: pointer;
+  background-color: rgb(59, 59, 59);
+  color: white;
+
+}
+.permission-btn:hover{
+  background-color: red;
+
+}
 .permission-div {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -234,23 +254,23 @@
   width: 100%;
   height: auto;
   background-color: white;
-  padding:10px;
+  padding: 10px;
 }
 .userHistoryinner > div {
-  padding:10px;
+  padding: 10px;
   overflow: auto;
   width: 100%;
   height: auto;
 }
-.btndivH{
-  width:100%;
+.btndivH {
+  width: 100%;
   display: flex;
   justify-content: end;
 }
-.btndivH button{
-  padding:2px 5px;
+.btndivH button {
+  padding: 2px 5px;
   background-color: red;
-  color:white;
+  color: white;
 }
 
 @media (min-width: 480px) and (max-width: 1080px) {
@@ -269,6 +289,7 @@
   .subheading {
     padding: 10px;
   }
+
   .permission {
     display: flex;
     gap: 10px;

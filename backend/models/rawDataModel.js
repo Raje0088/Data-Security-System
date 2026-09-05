@@ -22,6 +22,9 @@ const rawDataSchema = new mongoose.Schema({
     email_2_db: String,
     email_3_db: String,
     followup_db: String,
+    verifiedBy_db: { type: String, default: "" },
+    date_db: String,
+    time_db: String,
     isSkip_db: { type: String, default: false },
     database_status_db: {
         type: String,
@@ -29,9 +32,9 @@ const rawDataSchema = new mongoose.Schema({
         default: "Raw",
     },
     dumpBy_db: String,
-    remark_db:String,
+    remark_db: String,
     master_data_db: {
-        assignTo:{type:String,default:""},
+        assignTo: { type: String, default: "" },
         excelId: { type: String },
         state: { type: [String], default: [] },
         district: [{ name: String, total: Number }],

@@ -15,6 +15,8 @@ import { base_url } from "../config/config";
 import { AuthContext } from "../context-api/AuthContext";
 import { useContext } from "react";
 import placeEdit from "../assets/placeEdit.png";
+import MessageModal from "./Message/MessageModal";
+
 
 const Setting = () => {
   const { userLoginId } = useContext(AuthContext);
@@ -65,6 +67,7 @@ const Setting = () => {
     prevName: "",
     changeName: "",
   });
+  const [openMessage,setOpenMessage] = useState(false)
 
   useEffect(() => {
     const fetchRoleName = async () => {
@@ -292,6 +295,7 @@ const Setting = () => {
     setRefresh((prev) => !prev);
   }
   useEffect(() => {
+    if (areaSection.pincode?.length !== 6) return;
     const delayDebounce = setTimeout(() => {
       const checkPincode = async () => {
         if (areaSection.pincode.length >= 4) {
@@ -305,10 +309,10 @@ const Setting = () => {
             const check = result.data.count;
             if (check != 0) {
               setTrigger(true);
-              console.log("search found", result.data);
+              console.log("search found=====>", result.data);
             } else {
               setTrigger(false);
-              console.log("search NOT found", result.data);
+              console.log("search NOT found======>", result.data);
             }
           } catch (err) {
             console.log("internal error in checkpincode", err);
@@ -661,6 +665,10 @@ const Setting = () => {
       changeName: "",
     });
   };
+
+  const handleMessagePopup = () =>{
+    
+  }
   return (
     <>
       <div className={styles.main}>
@@ -846,7 +854,7 @@ const Setting = () => {
                 onClick={() => {
                   setOpenUpdateArea(true);
                 }}
-                style={{ width: "25px", height: "25px",cursor:"pointer" }}
+                style={{ width: "25px", height: "25px", cursor: "pointer" }}
                 alt=""
               />
               {/* <CiEdit
@@ -1329,6 +1337,13 @@ const Setting = () => {
                 ))}
               </table>
             </div>
+          </div>
+        </div>
+        <div className={styles.roles}>
+          <div style={{display:"flex",alignItems:"center", gap:"20px"}} className={styles.subheading}>
+            <h4>- Template Message</h4>
+            <button className={styles.custombtn} onClick={()=>{setOpenMessage(true)}}>Create</button>
+            {openMessage && <MessageModal openModal={""} onClose={()=>{setOpenMessage(false)}} />  }
           </div>
         </div>
       </div>

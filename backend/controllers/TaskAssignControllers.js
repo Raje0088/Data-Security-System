@@ -90,17 +90,23 @@ const assignClient = async (req, res) => {
         // console.log("cleitnMap====================================", clientMap)
 
         let dt = {
-            newData: (target.find((item) => item.title === "New data add")?.num) || 0,
-            leads: (target.find((item) => item.title === "Leads")?.num) || 0,
-            training: (target.find((item) => item.title === "Training")?.num) || 0,
-            followUp: (target.find((item) => item.title === "Follow Up")?.num) || 0,
-            newCall: (target.find((item) => item.title === "New Call")?.num) || 0,
+            new_data_db: (target.find(item => item.title === "New data add")?.num) || 0,
+            leads_db: (target.find(item => item.title === "Leads")?.num) || 0,
+            training_db: (target.find(item => item.title === "Training")?.num) || 0,
+            followUp_db: (target.find(item => item.title === "Follow Up")?.num) || 0,
+            new_calls_db: (target.find(item => item.title === "No of New Calls")?.num) || 0,
+            demo_db: (target.find(item => item.title === "Demo")?.num) || 0,
+            installation_db: (target.find(item => item.title === "Installation")?.num) || 0,
+            recovery_db: (target.find(item => item.title === "Recovery")?.num) || 0,
+            support_db: (target.find(item => item.title === "Support")?.num) || 0,
+            target_db: (target.find(item => item.title === "Target")?.num) || 0,
         };
 
 
+        console.log("target", target)
         const result = await taskAssignModel.create({
             taskType_db: taskMode === "Regular" ? "NA" : taskType,
-            task_client_id: clientMap,
+            task_client_id: clientMap, 
             assignBy_db: assignBy,
             assignTo_db: assignTo,
             total_task_db: taskMode === "Regular" ? 0 : clientMap.length,
@@ -147,6 +153,146 @@ const assignClient = async (req, res) => {
         res.status(500).json({ message: "internal error in assigning", err: err.message })
     }
 }
+// const assignClient = async (req, res) => {
+//     try {
+//         const { assignBy, assignTo, productRange, taskType, state, pincode, date, deadline, target, taskMode, district, businessName, mobile, directSend = "false", selectedClients, title = "New Task", excelId, forceAssign } = req.body;
+//         console.log("task  assign", state, district, excelId, pincode)
+//         if (directSend === "false" && excelId && excelId.title !== "NA") {
+//             const alreadyAssign = await UserModel.findOne({ "master_data_db.excelId": excelId.excelId })
+//             console.log("excelId---------", alreadyAssign)
+//             if (alreadyAssign && !forceAssign) return res.status(200).json({ askConfirmation: true, message: `Already Assigned to ${alreadyAssign.generateUniqueId}` })
+//         }
+
+//         //Updating UserModel of executive to assign Maaster data and also updating viewExcelModel to know excel already assign
+//         if (excelId?.excelId) {
+//             await UserModel.updateOne({ generateUniqueId: assignTo }, { $set: { "master_data_db.excelId": excelId.excelId } })
+//             const yo = await viewExcelModel.updateOne(
+//                 { dumpBy_db: excelId?.excelId },
+//                 {
+//                     $set: {
+//                         assignTo_db: assignTo,
+//                         assignBy_db: assignBy,
+//                     }
+//                 },
+//                 {
+//                     new: true,
+//                 }
+//             )
+
+//             await rawDataModel.updateMany({ dumpBy_db: excelId.excelId },
+//                 {
+//                     $set: {
+//                         "master_data_db.assignTo": assignTo,
+//                     }
+//                 },
+
+//             )
+
+//         }
+
+//         if (district && state) {
+//             await rawDataModel.updateMany({ district_db: district, state_db: state },
+//                 {
+//                     $set: {
+//                         "master_data_db.assignTo": assignTo,
+//                     }
+//                 }
+//             )
+//         }
+
+//         if ((district || state || pincode)) {
+//             const assignResult = await assignMasterDataArea(assignTo, state, district, pincode, forceAssign)
+//             if (!assignResult.success) {
+//                 return res.status(200).json(assignResult)
+//             }
+//         }
+
+//         if (pincode.length > 0) {
+//             await rawDataModel.updateMany({ pincode_db: { $in: pincode } },
+//                 {
+//                     $set: {
+//                         "master_data_db.assignTo": assignTo,
+//                     }
+//                 }
+//             )
+//         }
+
+//         let clientMap
+//         if (taskMode === "Regular") {
+
+//         } else {
+//             if (!taskType || !assignBy || !assignTo || selectedClients?.length === 0) return res.status(404).json({ message: "AssignBy , AssignTo, selected Clients and TaskType cannot be empty" })
+//             if (taskType === "EXCEL") {
+//                 const ids = await rawDataModel.find({ dumpBy_db: selectedClients }, { client_id: 1, _id: 0 })
+//                 clientMap = ids.map((item) => ({ id: item.client_id, status: false }))
+
+//             } else {
+//                 clientMap = selectedClients.map((item) => (
+//                     { id: item, status: false }
+//                 ))
+//             }
+//         }
+
+//         // console.log("cleitnMap====================================", clientMap)
+
+//         let dt = {
+//             newData: (target.find((item) => item.title === "New data add")?.num) || 0,
+//             leads: (target.find((item) => item.title === "Leads")?.num) || 0,
+//             training: (target.find((item) => item.title === "Training")?.num) || 0,
+//             followUp: (target.find((item) => item.title === "Follow Up")?.num) || 0,
+//             newCall: (target.find((item) => item.title === "New Call")?.num) || 0,
+//         };
+
+
+//         const result = await taskAssignModel.create({
+//             taskType_db: taskMode === "Regular" ? "NA" : taskType,
+//             task_client_id: clientMap,
+//             assignBy_db: assignBy,
+//             assignTo_db: assignTo,
+//             total_task_db: taskMode === "Regular" ? 0 : clientMap.length,
+//             pending_db: taskMode === "Regular" ? 0 : clientMap.length,
+//             task_status_db: "Pending",
+//             targets_db: dt,
+//             productPriceRange_db: productRange,
+//             taskObj_db: target,
+//             taskMode_db: taskMode,
+//             uptilDate_db: date,
+//             deadline_db: deadline,
+//             excelId_db: excelId,
+//         })
+
+//         const io = getIO();
+//         const userName = await UserModel.findOne({ generateUniqueId: assignTo })
+//         const result1 = await taskAssignModel.find({
+//             task_status_db: "Pending",
+//             assignTo_db: assignTo,
+//         })
+
+//         io.to(assignTo).emit("assignTask", {
+//             message: `New task successfully send by ${assignBy} to ${assignTo} (${userName.name})`,
+//             taskType: taskType,
+//             sendTo: assignTo,
+//             sendBy: assignBy,
+//             title: title,
+//             totalTask: result1.length,
+//             result: result1,
+//             taskId: result._id,
+//             text: `Title: ${title}, TaskType: ${taskType}, Total Record: ${result1.length}`
+//         })
+
+//         res.status(200).json({
+//             message: `New task successfully send by ${assignBy} to ${assignTo} (${userName.name})`,
+//             result,
+//             taskId: result._id,
+//             text: `Title: ${title}, TaskType: ${taskType}, Total Record: ${result1.length}`,
+//             message: `New task successfully send by ${assignBy} to ${assignTo} (${userName.name})`,
+//         })
+
+//     } catch (err) {
+//         console.log("internal error in assigning", err)
+//         res.status(500).json({ message: "internal error in assigning", err: err.message })
+//     }
+// }
 // const assignClient = async (req, res) => {
 //     try {
 //         const { assignBy, assignTo, productRange, taskType, state, pincode, date, deadline, target, taskMode, district, businessName, mobile, directSend = "false", selectedClients, title = "New Task", excelId, forceAssign } = req.body;
@@ -437,9 +583,10 @@ const deleteAssignTaskBySA = async (req, res) => {
 const removeAssignArea = async (req, res) => {
     try {
         const userId = req.params.id;
+        console.log("we are here", userId)
         const result = await UserModel.findOneAndUpdate({ generateUniqueId: userId },
             {
-                $set: { "master_data_db.area": [] }
+                $set: { "master_data_db.productPermissions": [] }
             },
             {
                 new: true,
@@ -455,15 +602,15 @@ const removeAssignArea = async (req, res) => {
 const removeAssignExcelSheet = async (req, res) => {
     try {
         const { userId, dumpId } = req.body;
-        console.log("--------------",userId, dumpId)
+        console.log("--------------", userId, dumpId)
         const user = userId.split("-")[0].trim()
-        console.log("user",user)
+        console.log("user", user)
         const result = await UserModel.findOneAndUpdate({ generateUniqueId: user },
             {
-                $set:{
+                $set: {
                     "master_data_db.excelId": {
-                        title:"NA",
-                        excelId:"NA",
+                        title: "NA",
+                        excelId: "NA",
                     },
                 }
             },
@@ -482,7 +629,7 @@ const removeAssignExcelSheet = async (req, res) => {
                 new: true,
             }
         )
-        res.status(200).json({ message: `Assign excelsheet-${dumpId} from ${userId} has removed successfully`, result,resultExcel })
+        res.status(200).json({ message: `Assign excelsheet-${dumpId} from ${userId} has removed successfully`, result, resultExcel })
     } catch (err) {
         console.log("internal error", err)
         res.status(500).json({ message: "internal error", err: err.message })
@@ -494,4 +641,6 @@ const removeAssignExcelSheet = async (req, res) => {
 
 
 //NOT ASSIGNED DETAILS CONTROLLER
-module.exports = { assignClient, removeAssignArea,removeAssignExcelSheet, assignTaskAcceptRejectRequest, getAssignTaskUserConfiguration, getExcelDumpClientIdAssignTask, getUserAssignTask, cancelAssignTaskBySA, deleteAssignTaskBySA }
+
+
+module.exports = { assignClient, removeAssignArea, removeAssignExcelSheet, assignTaskAcceptRejectRequest, getAssignTaskUserConfiguration, getExcelDumpClientIdAssignTask, getUserAssignTask, cancelAssignTaskBySA, deleteAssignTaskBySA }

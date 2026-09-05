@@ -7,7 +7,7 @@ const History = (props) => {
   const [mapClientAllHistory, setMapClientAllHistory] = useState([]);
   useEffect(() => {
     if (!props.onCurrentClientId) {
-      console.log("Client ID not ready yet, waiting...");
+      // console.log("Client ID not ready yet, waiting...");
       return;
     }
     const fetchClientHistory = async () => {
@@ -15,7 +15,7 @@ const History = (props) => {
         const result = await axios.get(
           `${base_url}/history/get-client-history/${props.onCurrentClientId}`
         ); //props.onCurrentClientId
-        console.log("History result", result.data);
+        // console.log("History result", result.data);
 
         const sortData = [...result.data.result];
         if (props.sorts === "asc") {
@@ -60,7 +60,7 @@ const History = (props) => {
           </tr>
         </thead>
         <tbody>
-          {mapClientAllHistory.map((history, idx) => (
+          {mapClientAllHistory?.map((history, idx) => (
             <tr key={idx}>
               <td>{history.database_status_db}</td>
               <td>{history.client_visiting_id}</td>
@@ -72,7 +72,7 @@ const History = (props) => {
               <td>{history.time_db}</td>
               <td>{history.mobile_1_db}</td>
               <td>{history.remarks_db}</td>
-              <td>{history.product_db.map((prod) => prod.label).join(", ")}</td>
+              <td>{history.product_db?.map((prod) => prod.label).join(", ")}</td>
               <td>{history.quotationShare_db}</td>
               <td>{history.stage_db.map((stage) => stage.label).join(", ")}</td>
               <td>{history.assignBy}</td>

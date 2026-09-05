@@ -27,6 +27,7 @@ const Receipt = () => {
                 <th>Date And Time</th>
                 <th>Client Id</th>
                 <th>Client Name</th>
+                <th>Product</th>
                 <th>Final Price</th>
                 <th>Extra Charges</th>
                 <th>Total Amount</th>
@@ -49,6 +50,7 @@ const Receipt = () => {
                   </td>
                   <td>{item.client_id}</td>
                   <td>{item.client_name_db}</td>
+                  <td>{item.product_db}</td>
                   <td>{item.finalCost_db}</td>
                   <td>{item.extraCharges_db}</td>
                   <td>{item.totalAmount_db}</td>

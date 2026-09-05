@@ -12,10 +12,13 @@ import { AuthContext } from "../context-api/AuthContext";
 import { useContext } from "react";
 import MessagePortal from "../UI/MessagePortal";
 import { FaClipboardList } from "react-icons/fa";
+import AdvancePermissionModal from "../UI/AdvancePermissionModal";
 
 const Register = () => {
   const [uniqueUserIdGenerator, setUniqueUserIdGenerator] = useState("");
   const [userHistory, setUserHistory] = useState([]);
+  const [openAdvancePerm, setOpenAdvancePerm] = useState(false);
+  const [getProductWisePermission, setGetProductWisePermission]=useState([])
 
   const [formData, setFormData] = useState({
     uniqueUserId: "",
@@ -58,6 +61,7 @@ const Register = () => {
   const [showFormPopUp, setShowFormPopUp] = useState(false);
   const [currentFormId, setCurrentFormId] = useState("");
   const [updateFormId, setUpdateFormId] = useState("");
+  const [permissionFormData, setPermissionFormData] = useState([]);
 
   //USING DEBOUNCING FOR USERID EXIST OR NOT
   useEffect(() => {
@@ -88,11 +92,12 @@ const Register = () => {
   //DIRECTLY FETCHING UNIQUE ID FOR NEW USER WHEN ROLENAME SELECTED
   useEffect(() => {
     if (!selectRolename) return;
-    if (userLoginId) console.log("id", userLoginId, selectRolename);
+    if (userLoginId?.userId)
+      console.log("id", userLoginId?.userId, selectRolename);
     const fetch = async () => {
       const result = await axios.post(`${base_url}/utils/send-user-id`, {
-        roleName: selectRolename?.label,
-        createdBy: userLoginId,
+        roleName: selectRolename[0]?.label,
+        createdBy: userLoginId?.userId,
       });
       console.log("result id", result.data.result);
       setFormData((prev) => ({ ...prev, uniqueUserId: result.data?.result }));
@@ -190,11 +195,11 @@ const Register = () => {
 
   const handleChangeRoleNameSelectOption = (selectedOptions) => {
     console.log("rolename", selectedOptions);
-    console.log("rolename label", selectedOptions.label);
+    console.log("rolename label", selectedOptions[0].label);
     setSelectRolename(selectedOptions);
     setFormData((prev) => ({
       ...prev,
-      roleName: selectedOptions.label,
+      roleName: selectedOptions[0].label,
     }));
   };
 
@@ -247,16 +252,20 @@ const Register = () => {
     try {
       const result = await axios.post(
         `${base_url}/users/createUser`,
-        { ...formData, createdById: userLoginId },
+        {
+          ...formData,
+          permissionData: permissionFormData,
+          createdById: userLoginId?.userId,
+        },
         {
           headers: { "Content-Type": "application/json" },
         }
       );
-      console.log("resultl", result.data.user.generateUniqueId)
+      console.log("resultl", result.data.user.generateUniqueId);
       setMsg(result.data.message);
       setRefresh((prev) => !prev);
       setShowForm(true);
-      setSearchByUserId(result?.data?.user?.generateUniqueId)
+      setSearchByUserId(result?.data?.user?.generateUniqueId);
     } catch (err) {
       console.log("internal error", err);
       setMsg(err.response.data.message);
@@ -273,7 +282,11 @@ const Register = () => {
     try {
       const result = await axios.put(
         `${base_url}/users/updateUser/${searchByUserId}`,
-        { ...formData, updatedById: userLoginId },
+        {
+          ...formData,
+          permissionData: permissionFormData,
+          updatedById: userLoginId?.userId,
+        },
         {
           headers: { "Content-Type": "application/json" },
         }
@@ -281,7 +294,7 @@ const Register = () => {
       console.log("User Updatd Successfully", result);
       setMsg(result.data.message);
       setRefresh((prev) => !prev);
-      setSearchByUserId(result?.data?.user?.generateUniqueId)
+      setSearchByUserId(result?.data?.user?.generateUniqueId);
     } catch (err) {
       console.log("User not updated", err);
       setMsg(err.response.data.message);
@@ -341,6 +354,7 @@ const Register = () => {
         );
 
         setUniqueUserIdGenerator(data?.generateUniqueId);
+        setGetProductWisePermission(data?.master_data_db?.productPermissions)
         setShowForm(true);
       } catch (err) {
         console.log("internal error", err);
@@ -406,6 +420,7 @@ const Register = () => {
     setShowForm(false);
     setUserIdStatus(null);
     setIsModifing(false);
+    setPermissionFormData([]);
   };
 
   const handleOpenUserHistory = async (userId) => {
@@ -420,6 +435,11 @@ const Register = () => {
     }
   };
 
+  const handlePassPermissionData = (data) => {
+    setPermissionFormData(data);
+    console.log("parent Data", data);
+  };
+  console.log("parent Data", permissionFormData);
   return (
     <>
       <div className={styles.main}>
@@ -519,8 +539,25 @@ const Register = () => {
               />
             </span>
           </div>
-          <div className={styles.subheading}>
+          <div className={styles["subheading-perm"]}>
             <h4>Permission </h4>
+            <button
+              onClick={() => {
+                setOpenAdvancePerm(true);
+              }}
+              className={styles["permission-btn"]}
+            >
+              Advance Permission{" "}
+            </button>
+            <AdvancePermissionModal
+              openModal={openAdvancePerm}
+              selectAssignProduct={selectedAssignProducts}
+              onSetPermissionData={handlePassPermissionData}
+              onGetProductWisePermission={getProductWisePermission}
+              onClose={() => {
+                setOpenAdvancePerm(false);
+              }}
+            />
           </div>
           <div className={styles["permission-div"]}>
             <span className={styles.permission}>
@@ -536,6 +573,17 @@ const Register = () => {
 
             <span className={styles.permission}>
               <label className="checkbox" htmlFor="">
+                Delete
+              </label>
+              <input
+                type="checkbox"
+                checked={!!formData.delete_P}
+                onChange={(e) => permissionChecked(e, "delete_P")}
+              />
+            </span>
+
+            {/* <span className={styles.permission}>
+              <label className="checkbox" htmlFor="">
                 Update
               </label>
               <input
@@ -545,16 +593,6 @@ const Register = () => {
               />
             </span>
 
-            <span className={styles.permission}>
-              <label className="checkbox" htmlFor="">
-                Delete
-              </label>
-              <input
-                type="checkbox"
-                checked={!!formData.delete_P}
-                onChange={(e) => permissionChecked(e, "delete_P")}
-              />
-            </span>
             <span className={styles.permission}>
               <label className="checkbox" htmlFor="">
                 Edit
@@ -574,7 +612,7 @@ const Register = () => {
                 checked={!!formData.view_P}
                 onChange={(e) => permissionChecked(e, "view_P")}
               />
-            </span>
+            </span> */}
             <span className={styles.permission}>
               <label className="checkbox" htmlFor="">
                 Upload File
@@ -771,7 +809,8 @@ const Register = () => {
                   <th>Rolename</th>
                   <th>Division</th>
                   <th>Assign Product</th>
-                  <th>Permissions</th>
+                  <th>Major Permissions</th>
+                  <th>Product Wise Permission</th>
                   <th>User Name</th>
                   <th>User History</th>
                 </tr>
@@ -824,6 +863,24 @@ const Register = () => {
                         !todo.download_P && <span>No Permission Allotted</span>}
                     </td>
 
+                    <td>
+                      {todo.master_data_db.productPermissions.map((item) => (
+                        <tr>
+                          <th>{item.productName}</th>
+                          {item.permission.update_P ? (
+                            <td>Update</td>
+                          ) : (
+                            <td>NA</td>
+                          )}
+                          {item.permission.edit_P ? <td>Edit</td> : <td>NA</td>}
+                          {item.permission.view_P ? (
+                            <td> View</td>
+                          ) : (
+                            <td>NA</td>
+                          )}
+                        </tr>
+                      ))}
+                    </td>
                     <td>{todo.userID}</td>
                     <td
                       style={{
@@ -868,13 +925,8 @@ const Register = () => {
 
                       <th>Division</th>
                       <th>Assign Product</th>
-                      <th>Create</th>
-                      <th>Edit</th>
-                      <th>Update</th>
-                      <th>Delete</th>
-                      <th>Download</th>
-                      <th>UploadFile</th>
-                      <th>View</th>
+                      <th>Major Permission</th>
+                      <th>Product Wise Permission</th>
                       <th>User ID</th>
                       <th>Created By</th>
                       <th>Status</th>
@@ -909,13 +961,39 @@ const Register = () => {
                                 : "-"}
                             </td>
 
-                            <td>{user.create_P ? "true" : "false"}</td>
-                            <td>{user.edit_P ? "true" : "false"}</td>
-                            <td>{user.update_P ? "true" : "false"}</td>
-                            <td>{user.delete_P ? "true" : "false"}</td>
-                            <td>{user.download_P ? "true" : "false"}</td>
-                            <td>{user.uploadFile_P ? "true" : "false"}</td>
-                            <td>{user.view_P ? "true" : "false"}</td>
+                            <td>
+                              <tr>
+                                {user.create_P && <td>Create</td>}
+                                {user.delete_P && <td>Delete</td>}
+                                {user.download_P && <td>Download</td>}
+                                {user.uploadFile_P && <td>Upload File</td>}
+                                {user.view_P && <td>View</td>}
+                              </tr>
+                            </td>
+                            <td>
+                              {user?.master_data_db.productPermissions.map(
+                                (item) => (
+                                  <tr>
+                                    <th>{item.productName}</th>
+                                    {item.permission.update_P ? (
+                                      <td>Update</td>
+                                    ) : (
+                                      <td>NA</td>
+                                    )}
+                                    {item.permission.edit_P ? (
+                                      <td>Edit</td>
+                                    ) : (
+                                      <td>NA</td>
+                                    )}
+                                    {item.permission.view_P ? (
+                                      <td> View</td>
+                                    ) : (
+                                      <td>NA</td>
+                                    )}
+                                  </tr>
+                                )
+                              )}
+                            </td>
                             <td>{user.userID}</td>
                             <td>{user.createdBy}</td>
                             <td>{user.isActive}</td>

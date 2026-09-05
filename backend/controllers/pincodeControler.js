@@ -5,52 +5,25 @@ const { districtnames, statenames } = require("../utils/MasterPlaceList")
 const path = require("path")
 const fs = require("fs");
 
-
+//FETCH STATE,DISTRICT, COUTNRY FROM PINCODE
 const searchPincode = async (req, res) => {
     try {
-        const { state, district, taluka, village, pincode, sortBy, sortOrder = "asc", lastId, limit = 30 } = req.query;
+        const { pincode } = req.query;
 
         // Build filter object
         let filter = {};
-        if (state) filter.state_db = state.trim().toUpperCase();
-        if (district) filter.district_db = district.trim().toUpperCase();
-        if (taluka) filter.taluka_db = taluka.trim().toUpperCase();
-        if (village) filter.village_db = village.trim().toUpperCase();
         if (pincode) filter.pincode_db = pincode.trim();
 
-        //Cursor pagination
-        if (lastId) filter._id = { $gt: new mongoose.Types.ObjectId(lastId) };
-
-        //Build sort object
-        let sort = {};
-        if (sortBy) {
-            sort[sortBy] = sortOrder === "desc" ? -1 : 1;
-        } else {
-            sort._id = 1;  //default sort by _id ascending
-        }
-
-        //Query DB
-        const results = await pinCodeModel.find(filter).sort(sort).limit(parseInt(limit)).select("-__v"); // exclude version key
-
-        //prepare cursor for next page
-        const newLastId = results.length ? results[results.length - 1]._id : null;
-
-        // Query total matching documents (without pagination)
-        const totalCount = await pinCodeModel.countDocuments(filter);
-
-
-        res.json({
-            data: results,
-            lastId: newLastId,
-            count: results.length,
-            totalCount,
-        })
+        const results = await pinCodeModel.findOne(filter)
+        if (!results) return res.status(404).json({ message: "Pincode not found. !Please contact to superadmin" })
+        res.status(200).json({ results })
 
     } catch (err) {
         console.log("search failed internal error", err)
         res.status(500).json({ message: "search failed dur to internal error", err: err.message })
     }
 }
+
 const getStateDistrictVillageName = async (req, res) => {
     try {
         const { state, district, taluka, village, pincode } = req.query;
@@ -94,6 +67,7 @@ const createPincode = async (req, res) => {
                 result: existing
             });
         }
+
         const result = await pinCodeModel.create({
             pincode_db: pincode,
             state_db: state,
@@ -182,6 +156,8 @@ const fetchPlaceRawDB = async (req, res) => {
     }
 }
 
+
+//TO SAVE/STORE SAMPLE EXCEL PINCODE FILE IN UPLOAD FOLDER
 const sampleExcelFile = async (req, res) => {
     try {
         const filepath = path.join(__dirname, "../sampleFile/sample.csv");
@@ -201,15 +177,6 @@ const sampleExcelFile = async (req, res) => {
     }
 }
 
-const getPincodedetails = async (req, res) => {
-    try {
-        console.log("New Pincode found Successfully", result);
-        res.status(201).json({ message: "New Pincode found Successfully", result })
-    } catch (err) {
-        console.log("Internal error", err)
-        res.status(500).json({ message: "internal error", err: err.message })
-    }
-}
 
 const updateStateDistrictName = async (req, res) => {
     try {
@@ -227,7 +194,7 @@ const updateStateDistrictName = async (req, res) => {
 
         // Rewrite the file with updated arrays
         const filePath = path.join(__dirname, "../utils/MasterPlaceList.js");
-        console.log("filepath",filePath)
+        console.log("filepath", filePath)
         const content = `
 const statenames = ${JSON.stringify(statenames, null, 4)};
 const districtnames = ${JSON.stringify(districtnames, null, 4)};
@@ -278,23 +245,26 @@ const getStateDistrictName = async (req, res) => {
 //FOR SEARCH PAGE FILTERING PINCODE AFTER SELECTING STATE DISTRICT
 
 const filterPincodeForAssignTask = async (req, res) => {
-  try {
-    const { district } = req.query;
+    try {
+        const { district } = req.query;
 
-    let filters = {}
+        let filters = {}
 
-    if (district) {
-      filters.district_db = district
+        if (district) {
+            filters.district_db = district
+        }
+        const pin = await rawDataModel.find(filters)
+        const result = pin?.map((p) => (p.pincode_db))
+        res.status(200).json({ message: "pincode found", result })
+    } catch (err) {
+        console.log("internal error", err)
+        res.status(500).json({ message: "internal error", err: err.message })
     }
-    const pin = await rawDataModel.find(filters)
-    const result = pin?.map((p)=>(p.pincode_db))
-    res.status(200).json({message:"pincode found",result})
-  } catch (err) {
-    console.log("internal error", err)
-    res.status(500).json({ message: "internal error", err: err.message })
-  }
 }
-module.exports = { deleteLatterPincode,filterPincodeForAssignTask, sampleExcelFile, fetchPlaceRawDB, updateLatterPincode, searchPincode, getLatterPincode, createPincode, getStateDistrictVillageName, updateStateDistrictName, getStateDistrictName }
+
+
+
+module.exports = { deleteLatterPincode, filterPincodeForAssignTask, sampleExcelFile, fetchPlaceRawDB, updateLatterPincode, searchPincode, getLatterPincode, createPincode, getStateDistrictVillageName, updateStateDistrictName, getStateDistrictName }
 
 
 //aggregation pipeline used

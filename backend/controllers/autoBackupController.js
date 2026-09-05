@@ -42,7 +42,7 @@ const creatAutoBackupEmails = async (req, res) => {
                     userId_db: userId
                 }
             )
-        } 
+        }
         console.log("email successfully loaded")
         res.status(200).json({ message: "email successfully loaded" })
     } catch (err) {
@@ -311,9 +311,9 @@ The backup was taken on ${date}.`,
 }
 
 
+ 
 
-
-cron.schedule('36 14 * * *', async () => {
+cron.schedule('0 19 * * *', async () => {
     try {
         const date = new Date()
 
@@ -411,6 +411,7 @@ The backup was taken on ${date}.`,
 
 })
 
+// RESTORE BACKUP
 const restoreBackup = async (req, res) => {
     const io = getIO();
 
@@ -452,20 +453,27 @@ const restoreBackup = async (req, res) => {
         const dirs = fs.readdirSync(filePath);
         const restoreDir = path.join(filePath, dirs[0])
         const url = process.env.MONGODB_URL
+        console.log("url", url)
+
+
+        if (!dirs.length) {
+            return res.status(400).json({ message: "Zip is empty or invalid format" });
+        }
+
 
         const restore = spawn("mongorestore", [
             `--uri=${url}`,
             "--drop",
-            "--db=i2s2_Database",
+            // "--db=i2s2_Database",
             "--noIndexRestore",
             "--numInsertionWorkersPerCollection=16",
             "--numParallelCollections=16",
             restoreDir
         ]);
-
         restore.stdout.on("data", data => {
-            io.emit("restoreProgress", data.toString())
-            console.log("Progress:", data.toString());
+            const text = data.toString();
+            io.emit("restoreProgress", text)
+            console.log("Progress:", text);
         })
         restore.stderr.on("data", data => {
             const line = data.toString();
@@ -482,6 +490,14 @@ const restoreBackup = async (req, res) => {
             }
         })
         restore.on("close", () => {
+            // delete extracted temp folder
+            fs.rmSync(filePath, { recursive: true, force: true });
+
+            // OPTIONAL: also delete uploaded zip file
+            if (fs.existsSync(zipFilePath)) {
+                fs.rmSync(zipFilePath, { force: true });
+            }
+
             io.emit("restoreComplete", { message: "Restore finished" })
             console.log("Restore finished");
         })
@@ -549,7 +565,7 @@ const restoreBackup = async (req, res) => {
 //     }
 // }
 
-
+// DONT DO THIS
 const deleteEntireDatabase = async (req, res) => {
     // try {
     //     const url = process.env.MONGODB_URL;

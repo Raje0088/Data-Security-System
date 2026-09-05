@@ -11,7 +11,7 @@ import ExecutiveDashboard from "./components/Dashboard/Executive/ExecutiveDashbo
 import SuperAdminDashboard from "./components/Dashboard/SuperAdmin/SuperAdminDashboard.jsx";
 import AdminDashboard from "./components/Dashboard/Admin/AdminDashboard.jsx";
 import Login from "./Pages/Login.jsx";
-import ProgressReport from "./components/Report/ProgressReport.jsx";
+import ProgressReport from "./components/UserReport/ProgressReport.jsx";
 import SearchClient from "./Pages/SearchClient.jsx";
 import HomeNavigator from "./Pages/HomeNavigator.jsx";
 import ViewExcel from "./Pages/ViewExcel.jsx";
@@ -22,6 +22,8 @@ import Protected from "./Pages/Protected.jsx";
 import RequestModal from "./UI/RequestModal.jsx";
 import GlobalModalProvider from "./context-api/GlobalModalContext.jsx";
 import SocketListner from "./components/SocketListner.jsx";
+import ReportDashboard from "./components/Reports/ReportDashboard.jsx";
+import ReminderToast from "./UI/ReminderToast.jsx";
 // import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
@@ -29,8 +31,9 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <GlobalModalProvider>
-          <HomeNavigator />
           <SocketListner />
+          <ReminderToast />
+          <HomeNavigator />
           <Routes>
             <Route path="/client-page" element={<ClientPage />} />
             <Route path="/user-dashboard" element={<ExecutiveDashboard />} />
@@ -54,6 +57,7 @@ function App() {
             <Route path="/view-excel" element={<ViewExcel />} />
             <Route path="/backup" element={<Backup />} />
             <Route path="/receipt" element={<Receipt />} />
+            <Route path="/report" element={<ReportDashboard/>} />
             {/* <Route path="/m" element={<RequestModal />} /> */}
           </Routes>
           <RequestModal />

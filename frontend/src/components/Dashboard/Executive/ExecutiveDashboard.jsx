@@ -16,7 +16,7 @@ import QuickTeritoryFlash from "../../QuickTeritoryFlash";
 
 const ExecutiveDashboard = () => {
   const navigate = useNavigate();
-  const { userLoginId, userPermissions } = useContext(AuthContext);
+  const { userLoginId } = useContext(AuthContext);
   const { handleOpenModal, handleCloseModal, modalContent } =
     useContext(RequestModalContext);
   const [checkAssignWork, setCheckAssignWork] = useState(false);
@@ -31,38 +31,48 @@ const ExecutiveDashboard = () => {
   const [remainderTotalCount, setRemainderTotalCount] = useState(0);
   const [remainder, setRemainder] = useState([]);
 
-  useEffect(() => {
-    if (!userLoginId) return alert("no user login id available");
-    socket.on("connect", () => {
-      // console.log("✅ Socket connected:", socket.id);
-      socket.emit("joinRoom", userLoginId);
-      // console.log("✅ joinRoom emitted with:", executiveId);
-    });
+  // useEffect(() => {
+  //   if (!userLoginId) return;
+  //   socket.on("connect", () => {
+  //     // console.log("✅ Socket connected:", socket.id);
+  //     socket.emit("joinRoom",  {userId:userLoginId?.userId,roleType:userLoginId?.roleType});
+  //     // console.log("✅ joinRoom emitted with:", executiveId);
+  //   });
 
-    socket.on("assignTask", (data) => {
-      console.log("🔥 Received taskAssigned:", data);
-      setAssignTaskNotify(data.totalTask);
-      setTaskList(data.result);
-    });
+  //   socket.on("userReminder", (data) => {
+  //     alert("data", data.length);
+  //     setRemainderTotalCount(data.length);
+  //     setRemainder(data);
+  //   });
 
-    socket.on("extra-task-assigned", (data) => {
-      console.log("🔥 Received Extra-taskAssigned:", data);
-      setExtraTask(data.newTask);
-      setCheckExtraTask(true);
-      alert(data.message);
-    });
-    return () => {
-      socket.off("assignTask");
-      socket.off("extra-task-assigned");
-      socket.off("connect");
-    };
-  }, [userLoginId]);
+  //   socket.on("assignTask", (data) => {
+  //     console.log("🔥 Received taskAssigned:", data);
+  //     setAssignTaskNotify(data.totalTask);
+  //     setTaskList(data.result);
+  //   });
+
+  //   socket.on("extra-task-assigned", (data) => {
+  //     console.log("🔥 Received Extra-taskAssigned:", data);
+  //     setExtraTask(data.newTask);
+  //     setCheckExtraTask(true);
+  //     alert(data.message);
+  //   });
+  //   return () => {
+  //     socket.off("userReminder");
+  //     socket.off("assignTask");
+  //     socket.off("extra-task-assigned");
+  //     socket.off("connect");
+  //   };
+  // }, [userLoginId]);
+
+
+
 
   useEffect(() => {
     const fetchTask = async () => {
       try {
         const result = await axios.get(
-          `${base_url}/task/get-assign-task/${userLoginId}`
+          `${base_url}/task/get-assign-task/${userLoginId?.userId}`
         );
         const data = result.data?.result;
         console.log("assing task", result);
@@ -76,9 +86,10 @@ const ExecutiveDashboard = () => {
   }, [socket]);
 
   useEffect(() => {
+    if(!userLoginId) return;
     const fetchExtraTask = async () => {
       const result = await axios.get(
-        `${base_url}/users/searchuser-task-form/${userLoginId}`
+        `${base_url}/users/searchuser-task-form/${userLoginId?.userId}`
       );
       if (result.data.result) {
         setExtraTask(result.data.result);
@@ -95,10 +106,10 @@ const ExecutiveDashboard = () => {
 
   const fetchRemainder = async () => {
     try {
-      const result = await axios.get(`${base_url}/remainders/user-reminder`, {
-        params: { userId: userLoginId },
+      const result = await axios.get(`${base_url}/remainders/remainder`, {
+        params: { userId: userLoginId?.userId, roleType: userLoginId?.roleType },
       });
-      console.log("result", result.data.result);
+      console.log("remainder", result.data.result);
       setRemainder(result.data.result);
       setRemainderTotalCount(result.data.result.length);
     } catch (err) {
@@ -114,11 +125,14 @@ const ExecutiveDashboard = () => {
     const userId = "E02_SA";
     navigate("/client-page", { state: { userId, taskdata } });
   };
+  const goToReportPage = () => {
+    navigate("/report");
+  };
   return (
     <div className={styles.main}>
       <div className={styles["main-content"]}>
         <header className={styles.header}>
-          <h3>Dashboard For {userPermissions.userName} </h3>
+          <h3>Dashboard For {userLoginId?.userName} </h3>
         </header>
         <div className={styles["box-div"]}>
           <div className={styles.box}>
@@ -153,7 +167,13 @@ const ExecutiveDashboard = () => {
               )}
             </button>
             <button>Master Data</button>
-            <button>Report</button>
+            <button
+              onClick={() => {
+                goToReportPage();
+              }}
+            >
+              Report
+            </button>
             <div className={styles.notification}>
               <button
                 style={{
@@ -199,7 +219,7 @@ const ExecutiveDashboard = () => {
             {buttonTranverseId === "Schedule Optima" && (
               <>
                 <ScheduleOptima
-                  userLoginId={userLoginId}
+                  userLoginId={userLoginId?.userId}
                   onCheckExtraTask={handleCheckExtraTask}
                   onShowOpenRequest={checkExtraTask}
                 />

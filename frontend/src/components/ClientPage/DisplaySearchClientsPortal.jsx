@@ -79,8 +79,8 @@ const DisplaySearchClientsPortal = ({
                     <td>{data.client_serial_no_id}</td>
                     <td
                       onClick={
-                        !(data.master_data_db.assignTo !== userLoginId &&
-                        userLoginId !== "SA")
+                        (data.isView === true ||
+                        userLoginId?.userId === "SA")
                           ? () => {
                               onClientIdClick(data.client_id);
                               onClose();
@@ -96,8 +96,7 @@ const DisplaySearchClientsPortal = ({
                     <td>{data.optical_name1_db}</td>
                     <td
                       className={
-                        data.master_data_db.assignTo !== userLoginId &&
-                        userLoginId !== "SA"
+                       ( !data.isView && userLoginId?.userId !== "SA")
                           ? styles.blur
                           : ""
                       }
@@ -105,9 +104,8 @@ const DisplaySearchClientsPortal = ({
                       {data.mobile_1_db}
                     </td>
                     <td
-                      className={
-                        data.master_data_db.assignTo !== userLoginId &&
-                        userLoginId !== "SA"
+                          className={
+                       ( !data.isView && userLoginId?.userId !== "SA")
                           ? styles.blur
                           : ""
                       }
@@ -115,9 +113,8 @@ const DisplaySearchClientsPortal = ({
                       {data.email_1_db}
                     </td>
                     <td
-                      className={
-                        data.master_data_db.assignTo !== userLoginId &&
-                        userLoginId !== "SA"
+                       className={
+                       ( !data.isView && userLoginId?.userId !== "SA")
                           ? styles.blur
                           : ""
                       }

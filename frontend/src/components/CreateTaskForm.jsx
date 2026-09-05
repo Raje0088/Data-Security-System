@@ -180,7 +180,7 @@ const CreateTaskForm = () => {
       const result = await axios.post(
         `${base_url}/task/task-assign`,
         {
-          assignBy: userLoginId,
+          assignBy: userLoginId?.userId,
           assignTo: selectUserId,
           taskType: taskType,
           target: addRequest,

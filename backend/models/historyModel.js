@@ -1,9 +1,5 @@
 const mongoose = require("mongoose")
 
-const recoveryHistorySchema = new mongoose.Schema({
-    recoverAmount: { type: Number, default: 0 },
-    recoverAmountDate: { type: String }
-}, { _id: false })
 
 const clientHistorySchema = new mongoose.Schema({
     client_serial_no_id: { type: String },
@@ -11,7 +7,7 @@ const clientHistorySchema = new mongoose.Schema({
     client_subscription_id: { type: String },
     userId_db: String,
     client_History_id: String, // this field added only
-    client_visiting_id: Number,
+    client_visiting_id: Number,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
     client_name_db: String,
     optical_name1_db: { type: String, required: true },
     optical_name2_db: { type: String, required: false, default: "" },
@@ -35,35 +31,30 @@ const clientHistorySchema = new mongoose.Schema({
     quotationShare_db: String,
     callType_db: { type: String, default: "out-bound" },
     expectedDate_db: String,
-    verifiedBy_db: String,
+    verifiedBy_db: { type: String, default: "" },
     stage_db: { type: Array },
     product_db: { type: Array },
     time_db: String,
     date_db: String,
     isActive_db: { type: Boolean, default: true },
     isSubscriber_db: { type: Boolean, default: false },
-    totalAmount: Number,
+    totalAmount: Number, 
     paidAmount: Number,
     tracking_db: {
-        new_data_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        leads_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        training_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        follow_up_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        installation_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        demo_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        recovery_db: { completed: { type: Boolean, default: false }, completedDate: String, recoveryHistory: [recoveryHistorySchema] },
-        target_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        no_of_new_calls_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        support_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        out_bound_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        in_bound_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        hot_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        lost_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        create_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        update_db: { completed: { type: Boolean, default: false }, completedDate: String },
-        deactivate_db: { completed: { type: Boolean, default: false }, completedDate: String },
+        new_data_db: { completed: { type: Boolean, default: false }, },
+        leads_db: { completed: { type: Boolean, default: false }, },
+        training_db: { completed: { type: Boolean, default: false }, },
+        followUp_db: { completed: { type: Boolean, default: false }, },
+        installation_db: { completed: { type: Boolean, default: false }, },
+        demo_db: { completed: { type: Boolean, default: false }, },
+        amc_db: { completed: { type: Boolean, default: false }},
+        recovery_db: { completed: { type: Boolean, default: false }},
+        target_db: { completed: { type: Boolean, default: false },},
+        new_calls_db: { completed: { type: Boolean, default: false }, },
+        support_db: { completed: { type: Boolean, default: false }, },
     },
     label_db: String,
+    shopType_db:{type:String, default:"Retail"},
     completion_db: {
         receivedProduct: String,
         status: String,
@@ -73,6 +64,7 @@ const clientHistorySchema = new mongoose.Schema({
         newStage: String,
     },
     amountDetails_db: {
+        paidDate: { type: String },
         totalAmount: { type: Number, default: 0 },
         paidAmount: { type: Number, default: 0 },
         extraCharges: { type: Number, default: 0 },
@@ -82,19 +74,19 @@ const clientHistorySchema = new mongoose.Schema({
         gst: String,
         referenceId: String,
         mode: String,
+        paymentId: String,
     },
 
 
     assignBy: {
         type: String,
-        ref: "UserModel"
     },
     assignTo: {
         type: String,
-        ref: "UserModel"
     },
     action_db: String,
     database_status_db: String,
+    taskId_db:String,
     master_data_db: {
         userId: String,
         excelId: { type: String },
@@ -102,6 +94,16 @@ const clientHistorySchema = new mongoose.Schema({
         district: [{ name: String, total: Number }],
         pincode: { type: [String], default: [] },
         clientIds: { type: [String], default: [] },
+    },
+    additional_db: {
+        invalidNumber: { type: Boolean, default: false },
+        callCut: { type: Boolean, default: false },
+        callBusy: { type: Boolean, default: false },
+        softwareAlreadyUsing: { type: Boolean, default: false },
+        notRequire: { type: Boolean, default: false },
+        callLater: { type: Boolean, default: false },
+        seniorWillCall: { type: Boolean, default: false },
+        shopClose: { type: Boolean, default: false },
     }
 }, { timestamps: true })
 

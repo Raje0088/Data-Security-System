@@ -10,7 +10,7 @@ const generateUserId = async (role, createdById) => {
     console.log("Existing user count for this combo:", count);
     const numberCount = String(count + 1).padStart(2, '0');
     let prefix = '';
-    const firstLetter = role[0]
+    const firstLetter = role[0] 
     prefix = `${firstLetter}${numberCount}_${createdById}`;
 
 console.log("Generated Prefix:", prefix);
@@ -21,6 +21,7 @@ console.log("Generated Prefix:", prefix);
 const getGenerateUserId = async (req, res) => {
     try {
         const { roleName, createdBy } = req.body;
+        console.log("generatedUserId is ", roleName);
         const result = await generateUserId(roleName, createdBy)
         console.log("generatedUserId is ", result);
         res.status(200).json({ message: "generateUserId is ", result })
@@ -30,4 +31,4 @@ const getGenerateUserId = async (req, res) => {
     }
 }
 
-module.exports = { generateUserId, getGenerateUserId };
+module.exports = { generateUserId, getGenerateUserId };   

@@ -65,6 +65,13 @@
 .plus-main {
   display: contents;   /* ← key line */
 }
+.sections{
+  /* background-color: red; */
+  display:grid;
+  grid-template-columns: 90% 10%;
+  align-items: center;
+  justify-content: space-between;
+} 
 
 .add-input-resize {
   width: 100%; /* Slightly smaller for extra fields */

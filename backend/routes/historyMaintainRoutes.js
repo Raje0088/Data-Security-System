@@ -8,5 +8,5 @@ router.post("/create-history",createHistory)
 router.get("/get-client-history/:id",getHistory)
 
 //fetch last update history records of client to display on screen of client page
-router.get("/get-last-updated-clienthistory/:id",getLastUpdatedClientHistory)
+router.get("/get-latest-clienthistory/:id",getLastUpdatedClientHistory)
 module.exports = router

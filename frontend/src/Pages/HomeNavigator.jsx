@@ -5,7 +5,7 @@ import Setting from "../components/Setting.jsx";
 import UserPage from "../components/UserPage/UserPage.jsx";
 import ExecutiveDashboard from "../components/Dashboard/Executive/ExecutiveDashboard.jsx";
 import SuperAdminDashboard from "../components/Dashboard/SuperAdmin/SuperAdminDashboard.jsx";
-import ProgressReport from "../components/Report/ProgressReport.jsx";
+import ProgressReport from "../components/UserReport/ProgressReport.jsx";
 import SearchClient from "./SearchClient.jsx";
 import ClientPage from "../components/ClientPage/ClientPage.jsx";
 import AdminDashboard from "../components/Dashboard/Admin/AdminDashboard.jsx";
@@ -27,38 +27,44 @@ import { AuthContext } from "../context-api/AuthContext.jsx";
 import { useContext } from "react";
 import axios from "axios";
 import { base_url } from "../config/config.js";
+import { RequestModalContext } from "../context-api/GlobalModalContext.jsx";
+import { setSelectedData, setField, resetAll } from "../redux/Redux";
+import { useSelector, useDispatch } from "react-redux";
 
 const HomeNavigator = () => {
-  const { userLoginId, userPermissions } = useContext(AuthContext);
+  const { userLoginId, setUserLoginId } = useContext(AuthContext);
+  const dispatch = useDispatch();
+  const {socketOnline} = useContext(RequestModalContext)
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [rel, setRel] = useState({ x: 0, y: 0 }); // <-- initialize with defaults
   const nodeRef = useRef(null);
 
-  const [isDrag, setIsDrag] = useState(false);
+  const [isDrag, setIsDrag] = useState(false); 
   const [toggleOpen, setToggleOpen] = useState(true);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      localStorage.removeItem("userLoginId");
-      localStorage.removeItem("userPermissions");
       const result = await axios.post(
         `${base_url}/auth/logout`,
         {
-          userId: userLoginId,
+          userLoginId: userLoginId,
         },
         {
+          withCredentials: true,
           headers: {
             "Content-Type": "application/json",
           },
         }
       );
-      console.log(`${userLoginId} logout successfully`, result);
+      console.log(`${userLoginId?.userId} logout successfully`, result);
+      setUserLoginId(null);
     } catch (err) {
       console.log("internal error", err);
     }
     navigate("/login");
   };
+
   const handleToggle = () => {
     setToggleOpen((prev) => !prev);
   };
@@ -110,12 +116,14 @@ const HomeNavigator = () => {
 
   return (
     <div
+    onClick={()=>{dispatch(resetAll())}}
       className={`${styles.home} ${styles.nodrag}`}
       style={{
         left: `${pos.x}px`,
         top: `${pos.y}px`,
         cursor: "move",
         position: "absolute",
+        display:userLoginId ? "" : "none",
       }}
       ref={nodeRef}
       onMouseDown={startDrag}
@@ -125,7 +133,7 @@ const HomeNavigator = () => {
           <FaEye
             className={styles.icon}
             onClick={handleToggle}
-            style={{ color: "red" }}
+            style={{ color:socketOnline ? "#06c525" : "red" }}
           />
         </h2>
       ) : (
@@ -133,42 +141,42 @@ const HomeNavigator = () => {
           <FaEyeSlash
             className={styles.icon}
             onClick={handleToggle}
-            style={{ color: "red" }}
+            style={{ color:socketOnline ? "#06c525" : "red" }}
           />
         </h2>
       )}
       {toggleOpen === true ? (
         <>
           {" "}
-          {userPermissions?.roleType === "Superadmin" && (
+          {userLoginId?.roleType === "Superadmin" && (
             <Link to="/" element={<SuperAdminDashboard />}>
               <h2>
                 <FaHome className={styles.icon} title="Superadmin Dashboard" />
               </h2>
             </Link>
           )}
-          {userPermissions?.roleType === "Admin" && (
+          {userLoginId?.roleType === "Admin" && (
             <Link to="/admin-dashboard" element={<AdminDashboard />}>
               <h2>
                 <FaHome className={styles.icon} title="Admin Dashboard" />
               </h2>
             </Link>
           )}
-          {userPermissions?.roleType === "Executive" && (
+          {userLoginId?.roleType === "Executive" && (
             <Link to="/user-dashboard" element={<ExecutiveDashboard />}>
               <h2>
                 <FaHome className={styles.icon} title="User Dashboard" />
               </h2>
             </Link>
           )}
-          {userPermissions?.roleType === "Superadmin" && (
+          {userLoginId?.roleType === "Superadmin" && (
             <Link to="/register" element={<Register />}>
               <h2>
                 <FaRegistered className={styles.icon} title="Add User" />
               </h2>
             </Link>
           )}
-          {userPermissions?.roleType === "Superadmin" && (
+          {userLoginId?.roleType === "Superadmin" && (
             <Link to="/setting" element={<Setting />}>
               <h2>
                 <IoSettings className={styles.icon} title="Setting" />
@@ -177,7 +185,10 @@ const HomeNavigator = () => {
           )}
           <span id={styles.form}>
             <h2>
-              <SiLibreofficewriter   className={styles.icon} title="Client Form" />
+              <SiLibreofficewriter
+                className={styles.icon}
+                title="Client Form"
+              />
             </h2>
             <div className={styles.formdiv}>
               <Link to="/client-page" element={<ClientPage />}>
@@ -190,7 +201,7 @@ const HomeNavigator = () => {
           </span>
           <Link to="/progress" element={<ProgressReport />}>
             <h2>
-              <FaUserCog  className={styles.icon} title="User Progress" />
+              <FaUserCog className={styles.icon} title="User Progress" />
             </h2>
           </Link>
           <Link to="/search-client" element={<SearchClient />}>

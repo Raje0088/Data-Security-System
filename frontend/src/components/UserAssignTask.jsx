@@ -220,7 +220,7 @@ const UserAssignTask = ({ executiveId }) => {
         assignTask: addTask,
         requestTask: addRequest,
         productTask: userAssignProduct,
-        assignById: userLoginId,
+        assignById: userLoginId?.userId,
         assignToId: executiveId,
         deadline: deadline,
         date: date,

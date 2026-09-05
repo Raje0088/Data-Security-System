@@ -1,7 +1,13 @@
 const express = require("express")
 const router = express.Router()
-const {userLogin, userLogout } = require("../controllers/LoginController")
+const {userLogin, userLogout ,refresh,} = require("../controllers/LoginController")
+const {authMiddleware} = require("../middleware/authMiddleware")
+const {decodeToken} = require("../utils/Authenthecation")
 
 router.post("/login",userLogin)
 router.post("/logout",userLogout)
-module.exports = router
+
+router.post("/refresh",refresh) 
+router.get("/decode", authMiddleware, decodeToken);
+
+module.exports = router 

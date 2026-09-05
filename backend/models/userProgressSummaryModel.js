@@ -17,7 +17,7 @@ const userProgressSummarySchema = new mongoose.Schema({
         adminAssign: { type: Number, default: 0 },
     },
 
-    lead_db: {
+    leads_db: {
         selfAssign: { type: Number, default: 0 },
         completed: { type: Number, default: 0 },
         adminAssign: { type: Number, default: 0 },

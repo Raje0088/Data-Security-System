@@ -1,19 +1,33 @@
-// const jwt = require("jsonwebtoken");
+const { verifyAccessToken } = require("../utils/Authenthecation")
 
-// module.exports = (req, res, next) => {
-//     const authHeader = req.headers.authorization;
-//     console.log("Auth Header:", authHeader); // log here
+const authMiddleware = (req, res, next) => {
+    try {
+        const authHeaders = req.headers.authorization;
+        if (!authHeaders) {
+            return res.status(401).json({ message: "No access token provided" })
+        }
 
-//     const token = authHeader?.split(" ")[1];
-//     if (!token) return res.status(401).json({ msg: "No token" });
+        const token = authHeaders.split(" ")[1]
 
-//     try {
-//         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//         req.user = decoded;
-//         console.log("Decoded Token:", decoded); // log here
-//         next();
-//     } catch (err) {
-//         console.log("JWT Error:", err.message);
-//         res.status(401).json({ msg: "Invalid token" });
-//     }
-// }
+        // console.log("token",token)
+        const decodeToken = verifyAccessToken(token)
+        console.log("decode",decodeToken)
+        if (!decodeToken) return res.status(401).json({ message: "Invalid or expired access token" })
+
+
+        // 3. Attach user info to request 
+        req.user = {
+            userId: decodeToken.userId,
+            roleType: decodeToken.roleType,
+            userName:decodeToken.userName,
+            permission: decodeToken.permission,
+            // masterData: decodeToken.masterData
+        }
+          next();
+    } catch (err) {
+        console.log("internal error", err)
+        res.status(500).json({ message: "internal error", err: err.message })
+    }
+}
+
+module.exports = {authMiddleware}

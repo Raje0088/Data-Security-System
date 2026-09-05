@@ -102,9 +102,27 @@ const stringSimilarity = require("string-similarity")
 // }
 const findDuplicateRecord = async (req, res) => {
     try {
+        const { opticalName = "true", clientName = "true" } = req.query
         const page = parseInt(req.query.page) || 1;
         const limit = 5;
         const skip = (page - 1) * limit;
+        let groupById = {
+
+            emails: "$emails",
+            mobile: "$mobiles",
+            pincode: "$pincode_db",
+        }
+
+        // in url boolean value like true or false convert to string as "true"/"false" so i change it to string comparison
+        if (opticalName === "true") {
+             groupById.opticalName= {$toLower: { $trim: { input: "$optical_name1_db" } }}
+            // groupById.opticalName = { $toLower: "$optical_name1_db" };
+        }
+        if (clientName === "true") {
+            groupById.clientName = {
+                $toLower: { $trim: { input: { $ifNull: ["$client_name_db", ""] } } }
+            };
+        }
         const totalRawRecordCount = await rawDataModel.countDocuments()
 
         const aggregationTotalCount = await rawDataModel.aggregate([
@@ -138,13 +156,7 @@ const findDuplicateRecord = async (req, res) => {
             },
             {
                 $group: {
-                    _id: {
-                        opticalName: { $toLower: "$optical_name1_db" },
-                        clientName: { $toLower: "$client_name_db" },
-                        emails: "$emails",
-                        mobile: "$mobiles",
-                        pincode: "$pincode_db",
-                    },
+                    _id: groupById,
                     count: { $sum: 1 },
                     doc: { $push: "$client_id" },
 
@@ -156,7 +168,7 @@ const findDuplicateRecord = async (req, res) => {
                 }
             },
         ], { allowDiskUse: true })
-
+        console.log("groupbyid", groupById)
         const aggregationResult = await rawDataModel.aggregate([
             {
                 $match: { isSkip_db: "false" },
@@ -188,13 +200,7 @@ const findDuplicateRecord = async (req, res) => {
             },
             {
                 $group: {
-                    _id: {
-                        opticalName: { $toLower: "$optical_name1_db" },
-                        clientName: { $toLower: "$client_name_db" },
-                        emails: "$emails",
-                        mobile: "$mobiles",
-                        pincode: "$pincode_db",
-                    },
+                    _id: groupById,
                     count: { $sum: 1 },
                     doc: { $push: "$client_id" },
 
@@ -247,7 +253,7 @@ const findDuplicateRecordBySearch = async (req, res) => {
         }
 
         const matchOrConditions = [];
-        matchOrConditions.push({isActive_db:true})
+        matchOrConditions.push({ isActive_db: true })
         if (clientId) {
             matchOrConditions.push({ client_id: clientId });
         }
@@ -295,7 +301,7 @@ const findDuplicateRecordBySearch = async (req, res) => {
                 ]
             });
         }
-        
+
         // Combine OR conditions
         const filters = matchOrConditions.length > 0 ? { $and: matchOrConditions } : {};
 
@@ -373,12 +379,12 @@ const deleteRawDBClient = async (req, res) => {
         console.log("id------", Id)
         const result = await rawDataModel.findOneAndUpdate({ client_id: Id },
             {
-                $set:{
-                    isActive_db:false,
+                $set: {
+                    isActive_db: false,
                 }
             },
             {
-                new:true,
+                new: true,
             }
         )
 
@@ -1000,14 +1006,14 @@ const skipRawDuplicateRecord = async (req, res) => {
 }
 
 
-const undoSkipDuplicate = async (req,res) => {
+const undoSkipDuplicate = async (req, res) => {
     try {
         await rawDataModel.updateMany(
             { isSkip_db: "true" },  // only docs where field does not exist
             { $set: { isSkip_db: "false" } }      // add new field with default value
         );
         console.log("done")
-         res.status(200).json({ message: `Undo Skip Successfully` })
+        res.status(200).json({ message: `Undo Skip Successfully` })
     } catch (err) {
         console.log("internal error", err)
         res.status(500).json({ message: "internal error", err })

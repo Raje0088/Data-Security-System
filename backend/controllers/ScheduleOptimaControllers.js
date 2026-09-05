@@ -24,7 +24,7 @@ const setGoals = async (req, res) => {
     let goalsMap = new Map([
       ["New Data Add", "new_data_db"],
       ["No of New Calls", "new_calls_db"],
-      ["Leads", "lead_db"],
+      ["Leads", "leads_db"],
       ["Demo" , "demo_db"],
       ["Follow Up" , "followUp_db"],
       ["Target", "target_db"],
@@ -100,7 +100,7 @@ const setGoals = async (req, res) => {
 }
 
 // USER SCHEDULE GOALS LOCKS AFTER DEADLINE
-cron.schedule('5 * * * *', async () => {
+cron.schedule('* * * * *', async () => {
   const now = new Date();
 
   const result = await scheduleOptimaModel.updateMany({
@@ -122,7 +122,6 @@ const getScheduleOptima = async (req, res) => {
     const curr_date = new Date().toISOString().split("T")[0]
 
     const result = await scheduleOptimaModel.findOne({ userId_db: userId,date_todo_db:curr_date})
-    console.log("goals --------------",result)
     res.status(200).json({ message: `${userId} todays  goals report`, result })
   } catch (err) {
     console.log("internal  error", err)
@@ -131,7 +130,7 @@ const getScheduleOptima = async (req, res) => {
 }
 
 // USER COMPLETED COUNT UPDATE AND SHOW ON FRONTEND 
-cron.schedule("* 23 * * *", async () => {
+cron.schedule("0 23 * * *", async () => {
   try {
     const today = new Date().toLocaleDateString("en-GB");
     const today_todo = todayDate()

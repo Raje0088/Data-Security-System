@@ -5,11 +5,14 @@ const { Counter } = require("../models/counterModel")
 const getNextGobalCounterSequence = async (counterKey) => {
     const counter = await Counter.findOneAndUpdate(
         { _id: counterKey },
-        { $inc: { sequence_value: 1 } },
+        {
+            $inc: { sequence_value: 1 },
+        },
         { new: true, upsert: true }, // new:true returnupdated doc, upsert:true creates if not exist
     )
     if (!counter || counter.sequence_value === undefined) {
-        throw new Error("Failed to get sequene value")
+        // throw new Error("Failed to get sequene value")
+        return 1
     }
     return counter.sequence_value;
 }
@@ -25,14 +28,17 @@ const getNextGobalCounterSequenceForRaw = async (counterKey, newValue) => {
     return counter.sequence_value;
 }
 
-const getLastNextValue = async(counterKey) => {
-        const lastValue = await Counter.findOne({_id:counterKey})
-            if (!lastValue || lastValue.sequence_value === undefined) {
-        throw new Error("Failed to get sequene value")
+
+//THIS IS NEXT BUTTON COUNTER VALUE FROM CLIENT/USER PAGE
+const getLastNextValue = async (counterKey) => {
+    const lastValue = await Counter.findOne({ _id: counterKey })
+    if (!lastValue || lastValue.sequence_value === undefined) {
+        // throw new Error("Failed to get sequene value")
+        return 1;
     }
-        return lastValue.sequence_value + 1;
+    return lastValue.sequence_value + 1;
 }
 
 // why rawDataModel.findOne().sort({clientid:-1}) failed ? 
 // becoz if two request send at same time then same id will return lead to error
-module.exports = { getNextGobalCounterSequence, getNextGobalCounterSequenceForRaw ,getLastNextValue }
+module.exports = { getNextGobalCounterSequence, getNextGobalCounterSequenceForRaw, getLastNextValue }

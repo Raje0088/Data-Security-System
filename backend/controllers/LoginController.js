@@ -3,6 +3,7 @@ const { loginRecordModel } = require("../models/LoginRecordModel")
 const bcrypt = require('bcryptjs');
 const requestIp = require('request-ip')
 const geoip = require('geoip-lite');
+const { generateAccessToken, generateRefreshToken, verifyAccessToken } = require("../utils/Authenthecation")
 
 // const userLogin = async (req, res) => {
 //     try {
@@ -72,27 +73,30 @@ const userLogin = async (req, res) => {
             session_db: true
         });
 
-        console.log("login records", record,result);
-        const permission = {
-            create_P: result.create_P,
-            delete_P: result.delete_P,
-            download_P: result.download_P,
-            edit_P: result.edit_P,
-            update_P: result.update_P,
-            uploadFile_P: result.uploadFile_P,
-            view_P: result.view_P,
-            roleType:result.roleType,
-            userName :result.name,
-            masterData:result.master_data_db,
-        }
+        // console.log("login records======================", record, result);
 
         // Check password
         const matchPassword = await bcrypt.compare(password, result.password);
-        if (matchPassword) {
-            return res.status(200).json({ message: "Password Match", userLoginId: userId, permission: permission });
-        } else {
+
+        const accessToken = generateAccessToken(result)
+        const refreshToken = generateRefreshToken()
+        if (!matchPassword) {
             return res.status(500).json({ message: "Password not Match" });
         }
+
+        result.refreshToken = refreshToken
+        await result.save()
+
+        // console.log("yo", accessToken, refreshToken)
+
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: false,       // ❗ false for localhost
+            sameSite: "lax",     // ❗ allow frontend → backend cookies
+            path: "/",           // ❗ important
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+        })
+        res.status(200).json({ message: "!Password Match. Login Successful ", accessToken ,masterData:result.master_data_db});
 
     } catch (err) {
         console.log("internal error", err);
@@ -102,12 +106,12 @@ const userLogin = async (req, res) => {
 
 const userLogout = async (req, res) => {
     try {
-        const { userId } = req.body;
+        const { userLoginId } = req.body;
         const date = new Date().toISOString().split("T")[0]
         const time = new Date().toLocaleTimeString("en-GB");
-        console.log("userid", userId)
-        const existingLogin = await loginRecordModel.findOne({ userId_db: userId, date_db: date, session_db: true })
-        if (!existingLogin) return res.status(400).json({ message: `Login session not available for ${userId}` })
+        console.log("userLoginId", userLoginId.userId)
+        const existingLogin = await loginRecordModel.findOne({ userId_db: userLoginId.userId, date_db: date, session_db: true })
+        if (!existingLogin) return res.status(400).json({ message: `Login session not available for ${userLoginId.userId}` })
 
         const end = new Date().getTime()
         const totalSecond = Math.floor((end - existingLogin?.start_db) / 1000);
@@ -117,7 +121,7 @@ const userLogout = async (req, res) => {
 
         const totalDuration = `${hr}hr ${min}min ${sec}sec`
         const result = await loginRecordModel.findOneAndUpdate(
-            { userId_db: userId, date_db: date, session_db: true },
+            { userId_db: userLoginId.userId, date_db: date, session_db: true },
             {
                 $set: {
                     logoutTime_db: time,
@@ -127,11 +131,61 @@ const userLogout = async (req, res) => {
                 }
             }
         )
-        res.status(200).json({ message: `${userId} Logout Successfully`, result })
+
+        const refreshToken = req.cookies?.refreshToken;
+        if (!refreshToken) {
+            return res.status(200).json({ message: "Logged out without refresh token" });
+        }
+        const user = await UserModel.findOne({ refreshToken: refreshToken })
+        if (user) {
+            user.refreshToken = null
+            user.save()
+        }
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax",
+            path: "/"
+        });
+
+        res.status(200).json({ message: `${userLoginId.userId} Logout Successfully`, result })
     } catch (err) {
         console.log("internal error", err)
         res.status(500).json({ message: "internal error", err: err.message })
     }
 }
 
-module.exports = { userLogin, userLogout }
+const refresh = async (req, res) => {
+    try {
+        const token = req.cookies.refreshToken;
+        console.log("token",token)
+        if (!token) return res.status(500).json({ message: "No refresh token found" })
+
+        const user = await UserModel.findOne({ refreshToken: token })
+     if (!user) {
+      res.clearCookie("refreshToken");
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+        const newAccessToken = generateAccessToken(user)
+        const newRefreshToken = generateRefreshToken();
+        // console.log("newRefreshToken",newRefreshToken)
+
+        user.refreshToken = newRefreshToken
+        await user.save()
+
+        res.cookie("refreshToken", newRefreshToken, {
+            httpOnly: true,
+            secure: false,       // ❗ false for localhost
+            sameSite: "lax",     // ❗ allow frontend → backend cookies
+            path: "/",           // ❗ important
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        })
+        res.status(200).json({ accessToken: newAccessToken,masterData:user.master_data_db })
+    } catch (err) {
+        console.log("internal errro", err)
+        res.status(500).json({ messge: "internal errror", err: err.message })
+    }
+}
+
+module.exports = { userLogin, userLogout, refresh }

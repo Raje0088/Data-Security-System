@@ -10,7 +10,7 @@ const goalsSchema = new mongoose.Schema({
 const productTaskSchema = new mongoose.Schema({
   new_calls_db: goalsSchema,
   new_data_db: goalsSchema,
-  lead_db: goalsSchema,
+  leads_db: goalsSchema,
   demo_db: goalsSchema,
   installation_db: goalsSchema,
   training_db: goalsSchema,
@@ -28,8 +28,6 @@ const scheduleOptimaSchema = new mongoose.Schema({
   cron_deadline_db: Date,
   isLocked_db: { type: Boolean, default: false },
   goal_status_db: { type: String, default: "active" },
-  createdAt_time_db: String,
-  createdAt_date_db: String,
   goals_db: {
     type: Map,
     of: productTaskSchema,

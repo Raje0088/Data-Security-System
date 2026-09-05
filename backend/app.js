@@ -47,7 +47,12 @@ app.use(morgan("dev"));
 
 // app.set("trust proxy", 1);
 app.use(cors({
-  origin: ["http://localhost:5173", "http://192.168.1.100:5173", process.env.FRONTEND_URL],
+  origin: [
+    "http://localhost:5173",
+    "http://192.168.1.100:5173",
+    "https://data-security-system.vercel.app",
+    process.env.FRONTEND_URL,
+  ].filter(Boolean),
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],

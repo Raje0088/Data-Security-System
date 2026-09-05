@@ -5,21 +5,21 @@ const bodyParser = require('body-parser');
 const http = require("http")
 const cors = require('cors')
 const dotenv = require('dotenv')
-const morgan = require("morgan") 
+const morgan = require("morgan")
 const connectDB = require("./config/db.js")
 const agenda = require("./jobs/reminderJobs.js")
 const path = require("path");
 const paths = require("./utils/assetPath.js")
 const cookieParser = require("cookie-parser")
 const { connectRedis, client } = require("./config/redis.js")
- 
+
 const { autoAploadPincodeJsonData } = require("./ZDUMPING/pincodeController.js")
 const createSuperAdmin = require("./controllers/seedController.js")
 const userRoutes = require("./routes/userRoutes.js");
 const settingRoutes = require("./routes/settingRoutes.js")
 const pincodeRoutes = require("./routes/pincodeRoute.js")
 const clientRoutes = require("./routes/clientRoutes.js");
-const rawDataRoutes = require("./routes/rawDataRoutes.js") 
+const rawDataRoutes = require("./routes/rawDataRoutes.js")
 const historyMaintainRoutes = require("./routes/historyMaintainRoutes.js")
 const taskAssignRoutes = require("./routes/taskAssignRoutes.js")
 const utilsRoutes = require("./routes/utilsRoutes.js")
@@ -41,13 +41,13 @@ const { startRemainder } = require("./controllers/remainderController.js")
 
 
 
- 
+
 dotenv.config();
 app.use(morgan("dev"));
 
 // app.set("trust proxy", 1);
 app.use(cors({
-  origin: ["http://localhost:5173", "http://192.168.1.100:5173"],
+  origin: ["http://localhost:5173", "http://192.168.1.100:5173",process.env.FRONTEND_URL],
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -66,7 +66,10 @@ const server = http.createServer(app);
 
 // Serve React build
 // ✅ Serve frontend build (React dist)
-app.use(express.static(paths.dist));
+//app.use(express.static(paths.dist));
+app.use((req, res) => {
+    res.sendFile(path.join(paths.dist, "index.html"));
+});
 
 // ✅ Serve external folders
 app.use("/uploadExcel", express.static(paths.uploadExcel));
@@ -81,7 +84,7 @@ app.use("/raw-data", rawDataRoutes)
 app.use("/history", historyMaintainRoutes)
 app.use("/task", taskAssignRoutes)
 app.use("/utils", utilsRoutes)
-app.use("/schedule", scheduleOptimaRoutes) 
+app.use("/schedule", scheduleOptimaRoutes)
 app.use("/subscribe-user", clientSubscriptionRoutes)
 app.use("/progress", userPrgressSummaryRoutes)
 app.use("/view-excel", viewExcelRoutes)
@@ -129,7 +132,7 @@ const { clientSubscriptionModel } = require("./models/clientSubscriptionModel");
 const { pinCodeModel } = require("./models/dumpIndiaData.js");
 const { filterArea } = require("./utils/filterArea.js")
 
- 
+
 filterArea()
 
 const a = async () => {
@@ -169,9 +172,11 @@ function getActiveLANIP() {
   return "127.0.0.1"; // fallback
 }
 
-const localIP = getActiveLANIP(); 
+const localIP = getActiveLANIP();
 
-server.listen(3000, '0.0.0.0', async function () {
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, '0.0.0.0', async function () {
   console.log("server running on port 3000")
   // console.log(`Server LAN IP: http://${localIP}:3000`);
   console.log(`Access from LAN: http://192.168.1.102:3000`);
